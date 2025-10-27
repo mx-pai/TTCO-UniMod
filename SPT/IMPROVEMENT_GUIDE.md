@@ -1,5 +1,7 @@
 # SPT 大刀阔斧改进指南
 
+> **提示**：目前仓库已将“改进版”配置合并回默认的 `experiments/spt/unimod1k.yaml`，`unimod1k_improved.yaml` 仅作为向后兼容的别名（内容与默认配置相同）。下面的记录保留了历史改动思路，若需启用可自行挑选落地。
+
 ## 📋 改进清单
 
 ### ✅ 优先级1：测试鲁棒性修复（已完成）
@@ -184,4 +186,3 @@ python lib/train/run_training.py --script spt --config unimod1k --save_dir ./
 5. 是否出现"框很歪"或其他异常
 
 这将帮助进一步优化改进方案。
-

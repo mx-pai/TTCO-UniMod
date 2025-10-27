@@ -1,5 +1,7 @@
 # 🚀 SPT 改进版训练 - 快速开始指南
 
+> **说明**：目前 `experiments/spt/unimod1k_improved.yaml` 的内容已与默认 `unimod1k.yaml` 保持一致，仅作为旧脚本的配置别名存在。若没有特殊需求，直接使用默认配置即可。
+
 ## 📋 一键启动（推荐）
 
 ### 最简单的方式
@@ -310,4 +312,3 @@ bash launch_training.sh --config unimod1k_improved --keep-ckpt 3
 - 建议在epoch 80/120/160暂停评测，选最优继续
 
 祝训练顺利！🎉
-
