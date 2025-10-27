@@ -77,4 +77,4 @@ Put the raw results in the [VOT Toolkit](https://github.com/votchallenge/toolkit
 - This repo is based on [Stark](https://github.com/researchmm/Stark) which is an excellent work.
 
 ## Contact
-If you have any question, please feel free to [contact us](xuefeng_zhu95@163.com)(xuefeng_zhu95@163.com)
+If you have any question, please feel free to contact **Ma Xu** at [b23041708@njupt.edu.cn](mailto:b23041708@njupt.edu.cn)
