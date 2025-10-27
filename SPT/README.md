@@ -7,13 +7,16 @@ The official implementation of the multi-modal (Vision, Depth and Language) SPT 
 ## Usage
 ### Installation
 
-Install the environment using Anaconda
+Install the environment using Miniconda (Python 3.6)
 ```
-conda create -n spt python=3.6
-conda activate spt
-bash install_pytorch17.sh
 cd /path/to/UniMod1K/SPT
+conda env create -f environment.yml
+conda activate spt
 ```
+
+> **Note**  
+> `jpeg4py` requires `libturbojpeg` on the host system. On Ubuntu you can install it with  
+> `sudo apt-get install libturbojpeg`.
 
 ### Data Preparation
 The training dataset is the [**UniMod1K**]

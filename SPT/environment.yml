@@ -1,0 +1,32 @@
+name: spt
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.6
+  - pytorch=1.7.0
+  - torchvision=0.8.1
+  - cudatoolkit=10.2
+  - numpy
+  - scipy
+  - pandas
+  - cython
+  - opencv
+  - tqdm
+  - pip
+  - onnx
+  - onnxruntime-gpu=1.6.0
+  - colorama
+  - lmdb
+  - visdom
+  - pycocotools
+  - pip:
+      - easydict
+      - PyYAML
+      - tb-nightly
+      - tikzplotlib
+      - git+https://github.com/Lyken17/pytorch-OpCounter.git
+      - jpeg4py
+      - timm==0.3.2
+      - pytorch_pretrained_bert==0.6.2
