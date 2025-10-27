@@ -30,13 +30,10 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train SPT with all improvements')
     parser.add_argument('--config', type=str, default='unimod1k_improved', help='Config file name (without .yaml)')
     parser.add_argument('--save_dir', type=str, default='./checkpoints_improved', help='Directory to save checkpoints')
-    parser.add_argument('--mode', type=str, default='multiple', choices=["single", "multiple"], help='Training mode')
-    parser.add_argument('--nproc_per_node', type=int, default=1, help='Number of GPUs per node')
     parser.add_argument('--auto_eval', action='store_true', help='Enable automatic evaluation during training')
     parser.add_argument('--eval_epochs', type=int, nargs='+', default=[40, 80, 120, 160, 200, 240],
                        help='Epochs to run evaluation')
     parser.add_argument('--keep_checkpoints', type=int, default=5, help='Number of recent checkpoints to keep')
-    parser.add_argument('--resume', type=str, default=None, help='Resume from checkpoint path')
     return parser.parse_args()
 
 
@@ -65,9 +62,21 @@ def run_training_improved(args):
     settings = ws_settings.Settings()
     settings.script_name = 'spt'
     settings.config_name = args.config
-    settings.save_dir = args.save_dir
+
     settings.local_rank = -1  # Single GPU mode
     settings.use_gpu = True
+    settings.save_dir = os.path.abspath(args.save_dir)
+    # CRITICAL: Set project_path for checkpoint saving
+    settings.project_path = f'train/spt/{args.config}'
+
+    # Set cfg_file and log_file paths
+    prj_dir = os.path.dirname(__file__)
+    settings.cfg_file = os.path.join(prj_dir, f'experiments/spt/{args.config}.yaml')
+
+    # Create log directory
+    log_dir = os.path.join(settings.save_dir, 'logs', 'train', 'spt', args.config)
+    os.makedirs(log_dir, exist_ok=True)
+    settings.log_file = os.path.join(log_dir, f'train_{args.config}.log')
 
     # Update config
     config_module = importlib.import_module("lib.config.spt.config")
@@ -90,7 +99,7 @@ def run_training_improved(args):
     # Update settings based on cfg
     from lib.train.base_functions import update_settings, build_dataloaders, get_optimizer_scheduler
     update_settings(settings, cfg)
-    
+
     # Build dataloaders with improved config
     print("\n[1/5] Building dataloaders...")
     loader_train = build_dataloaders(cfg, settings)
@@ -143,7 +152,7 @@ def run_training_improved(args):
 
     # Setup auto-evaluation callback if enabled
     if args.auto_eval:
-        print(f"✓ Auto-evaluation enabled at epochs: {args.auto_eval_epochs}")
+        print(f"✓ Auto-evaluation enabled at epochs: {args.eval_epochs}")
         trainer.eval_epochs = args.eval_epochs
         trainer.auto_eval_enabled = True
     else:
@@ -232,4 +241,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
