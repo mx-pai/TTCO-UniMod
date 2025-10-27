@@ -41,6 +41,9 @@ class SPT(BaseTracker):
         self.save_all_boxes = params.save_all_boxes
         self.z_dict_color = {}
         self.z_dict_depth = {}
+        self.lang_threshold = getattr(params, 'lang_threshold', 0.3)
+        self.tracking_enabled = True
+        self.last_lang_score = None
 
     def initialize(self, image, info: dict):
 
@@ -59,6 +62,7 @@ class SPT(BaseTracker):
             self.z_dict_depth = self.network.forward_backbone_depth(template_depth)
         # save states
         self.state = info['init_bbox']
+        self.tracking_enabled = True
         self.frame_id = 0
         if self.save_all_boxes:
             '''save all predicted boxes'''
@@ -69,6 +73,8 @@ class SPT(BaseTracker):
             return {"target_bbox": info['init_bbox']}
 
     def track(self, image, info: dict = None):
+        if not getattr(self, 'tracking_enabled', True):
+            return {"target_bbox": self.state}
         H, W, _ = image.shape
         self.frame_id += 1
         x_patch_arr, resize_factor, x_amask_arr = sample_target(image, self.state, self.params.search_factor,
@@ -90,6 +96,17 @@ class SPT(BaseTracker):
                                                               seq_dict_vl=seq_dict_vl, run_box_head=True)
 
         pred_boxes = out_dict['pred_boxes'].view(-1, 4)
+        lang_score = out_dict.get('lang_score', None)
+        if lang_score is not None:
+            lang_conf = lang_score.mean().item()
+            self.last_lang_score = lang_conf
+            if lang_conf < self.lang_threshold:
+                self.state = [0.0, 0.0, 0.0, 0.0]
+                self.tracking_enabled = False
+                return {"target_bbox": self.state}
+        else:
+            self.last_lang_score = None
+
         # Baseline: Take the mean of all pred boxes as the final result
         pred_box = (pred_boxes.mean(dim=0) * self.params.search_size / resize_factor).tolist()  # (cx, cy, w, h) [0,1]
 

@@ -19,6 +19,7 @@ def parameters(yaml_name: str):
     params.template_size = cfg.TEST.TEMPLATE_SIZE
     params.search_factor = cfg.TEST.SEARCH_FACTOR
     params.search_size = cfg.TEST.SEARCH_SIZE
+    params.lang_threshold = getattr(cfg.TEST, 'LANG_THRESHOLD', 0.3)
 
     # Network checkpoint path
     params.checkpoint = os.path.join(save_dir, "checkpoints/train/spt/%s/SPT_ep%04d.pth.tar" %

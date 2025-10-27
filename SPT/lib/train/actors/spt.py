@@ -2,6 +2,7 @@ from . import BaseActor
 from lib.utils.misc import NestedTensor
 from lib.utils.box_ops import box_cxcywh_to_xyxy, box_xywh_to_xyxy
 import torch
+import torch.nn.functional as F
 from lib.utils.merge import merge_template_search
 
 
@@ -12,6 +13,7 @@ class SPTActor(BaseActor):
         self.loss_weight = loss_weight
         self.settings = settings
         self.bs = self.settings.batchsize  # batch size
+        self.lang_loss_weight = getattr(settings, 'lang_loss_weight', 0.0)
 
     def __call__(self, data):
         """
@@ -32,16 +34,42 @@ class SPTActor(BaseActor):
         # compute losses
         loss, status = self.compute_losses(out_dict, gt_bboxes[0])
 
+        # language matching loss
+        if self.lang_loss_weight > 0 and 'lang_score' in out_dict:
+            lang_score_pos = out_dict['lang_score'].view(-1, 1)
+            batch_size = lang_score_pos.size(0)
+            if batch_size > 1:
+                perm = torch.arange(batch_size, device=lang_score_pos.device)
+                perm = torch.roll(perm, shifts=1)
+                neg_ids = data['nl_token_ids'][perm]
+                neg_masks = data['nl_token_masks'][perm]
+                text_ids_neg = neg_ids.permute(1, 0)
+                text_masks_neg = neg_masks.permute(1, 0)
+                text_data_neg = NestedTensor(text_ids_neg, text_masks_neg)
+                out_dict_neg = self.forward_pass(data, run_box_head=False, run_cls_head=False, text_data=text_data_neg)
+                lang_score_neg = out_dict_neg['lang_score'].view(-1, 1)
+                lang_scores = torch.cat([lang_score_pos, lang_score_neg], dim=0)
+                lang_labels = torch.cat([torch.ones_like(lang_score_pos), torch.zeros_like(lang_score_neg)], dim=0)
+                lang_loss = F.binary_cross_entropy(lang_scores, lang_labels)
+                loss = loss + self.lang_loss_weight * lang_loss
+                status["Loss/lang"] = lang_loss.item()
+                status["LangScore/pos"] = lang_score_pos.mean().item()
+                status["LangScore/neg"] = lang_score_neg.mean().item()
+            else:
+                status["LangScore/pos"] = lang_score_pos.mean().item()
+                status["Loss/lang"] = 0.0
+
         return loss, status
 
-    def forward_pass(self, data, run_box_head, run_cls_head):
+    def forward_pass(self, data, run_box_head, run_cls_head, text_data=None):
         color_feat_dict_list = []
         depth_feat_dict_list = []
         visiontext_feat_dict_list = []
         feat_dict_list = []
-        data['nl_token_ids'] = data['nl_token_ids'].permute(1, 0)
-        data['nl_token_masks'] = data['nl_token_masks'].permute(1, 0)
-        text_data = NestedTensor(data['nl_token_ids'], data['nl_token_masks'])
+        if text_data is None:
+            text_ids = data['nl_token_ids'].permute(1, 0)
+            text_masks = data['nl_token_masks'].permute(1, 0)
+            text_data = NestedTensor(text_ids, text_masks)
         text_dict = self.net(text_data=text_data, mode="language_backbone")
         visiontext_feat_dict_list.append(text_dict)
         # depth_feat_dict_list.append(text_dict)  # depth & language not co

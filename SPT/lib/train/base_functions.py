@@ -21,6 +21,7 @@ def update_settings(settings, cfg):
     settings.print_stats = None
     settings.batchsize = cfg.TRAIN.BATCH_SIZE
     settings.scheduler_type = cfg.TRAIN.SCHEDULER.TYPE
+    settings.lang_loss_weight = getattr(cfg.TRAIN, 'LANG_WEIGHT', 0.0)
 
 
 def names2datasets(name_list: list, settings, image_loader):

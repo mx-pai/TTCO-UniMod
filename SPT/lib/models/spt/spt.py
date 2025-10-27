@@ -54,6 +54,13 @@ class SPT(nn.Module):
         self.init = cfg.MODEL.INIT
         self._reset_parameters(self.init)
 
+        # language matching head
+        self.lang_gate = nn.Sequential(
+            nn.Linear(hidden_dim * 2, hidden_dim),
+            nn.ReLU(inplace=True),
+            nn.Linear(hidden_dim, 1)
+        )
+
     def _reset_parameters(self, init):
         # parameters init
         if init == 'xavier':
@@ -119,6 +126,16 @@ class SPT(nn.Module):
                                                  seq_dict_vl, self.query_embed.weight, return_encoder_output=True)
         # Forward the corner head
         out, outputs_coord = self.forward_box_head(output_embed, enc_mem)
+
+        # Language matching confidence
+        text_feat = seq_dict_vl["feat"][:self.num_text_token]  # (T, B, C)
+        text_cls = text_feat[0]  # (B, C)
+        query_feat = output_embed.squeeze(0)  # (B, N, C)
+        query_mean = query_feat.mean(dim=1)  # (B, C)
+        lang_input = torch.cat([query_mean, text_cls], dim=-1)  # (B, 2C)
+        lang_score = self.lang_gate(lang_input).sigmoid()
+        out["lang_score"] = lang_score
+
         return out, outputs_coord, output_embed
 
     def forward_box_head(self, hs, memory):

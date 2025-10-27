@@ -61,6 +61,7 @@ cfg.TRAIN.FREEZE_LAYERS = ['conv1', 'layer1']
 cfg.TRAIN.PRINT_INTERVAL = 50
 cfg.TRAIN.VAL_EPOCH_INTERVAL = 20
 cfg.TRAIN.GRAD_CLIP_NORM = 0.1
+cfg.TRAIN.LANG_WEIGHT = 0.0
 # Data augmentation options
 cfg.TRAIN.COLOR_JITTER = False  # Enable color jittering
 cfg.TRAIN.RANDOM_FLIP = False   # Enable random horizontal flip
@@ -111,6 +112,7 @@ cfg.TEST.TEMPLATE_SIZE = 128
 cfg.TEST.SEARCH_FACTOR = 5.0
 cfg.TEST.SEARCH_SIZE = 320
 cfg.TEST.EPOCH = 500
+cfg.TEST.LANG_THRESHOLD = 0.3
 
 
 def _edict2dict(dest_dict, src_edict):
@@ -151,5 +153,4 @@ def update_config_from_file(filename):
     with open(filename) as f:
         exp_config = edict(yaml.safe_load(f))
         _update_config(cfg, exp_config)
-
 
