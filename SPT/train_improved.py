@@ -40,7 +40,6 @@ def parse_args():
 def cleanup_old_checkpoints(checkpoint_dir, keep_last=5):
     """Keep only the latest N checkpoints"""
     import glob
-    from pathlib import Path
 
     ckpt_files = glob.glob(os.path.join(checkpoint_dir, 'SPT_ep*.pth.tar'))
     if len(ckpt_files) <= keep_last:
@@ -168,30 +167,6 @@ def run_training_improved(args):
     print(f"Checkpoint dir: {checkpoint_dir}")
     print(f"Checkpoint cleanup: Keep last {args.keep_checkpoints} files")
     print("="*80 + "\n")
-
-    # Custom training loop with cleanup
-    class ImprovedTrainer(LTRTrainer):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.cleanup_keep = args.keep_checkpoints
-            self.checkpoint_dir = checkpoint_dir
-
-        def cycle_dataset(self, loader):
-            """Override to add checkpoint cleanup after each epoch"""
-            for epoch in range(self.epoch, self.settings.num_epochs):
-                self.epoch = epoch
-
-                # Train one epoch
-                for data in loader:
-                    self.train_step(data)
-
-                # Cleanup old checkpoints
-                if (epoch + 1) % 10 == 0:  # Cleanup every 10 epochs
-                    cleanup_old_checkpoints(self.checkpoint_dir, self.cleanup_keep)
-
-                # LR step
-                if self.lr_scheduler is not None:
-                    self.lr_scheduler.step()
 
     # Start training
     try:
