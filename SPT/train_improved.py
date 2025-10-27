@@ -11,7 +11,6 @@ import sys
 import argparse
 import importlib
 import torch
-from torch.nn.parallel import DistributedDataParallel as DDP
 
 # Add project root to path
 prj_path = os.path.dirname(__file__)
@@ -108,12 +107,7 @@ def run_training_improved(args):
     print("[2/5] Building SPT model...")
     net = build_spt(cfg)
     net.cuda()
-
-    if settings.local_rank != -1:
-        net = DDP(net, device_ids=[settings.local_rank], find_unused_parameters=True)
-        settings.device = torch.device(f"cuda:{settings.local_rank}")
-    else:
-        settings.device = torch.device("cuda:0")
+    settings.device = torch.device("cuda:0")
 
     print(f"✓ Model built and moved to {settings.device}\n")
 
