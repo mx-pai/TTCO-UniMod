@@ -26,6 +26,7 @@ def run(settings):
     config_module = importlib.import_module("lib.config.%s.config" % settings.script_name)
     cfg = config_module.cfg
     config_module.update_config_from_file(settings.cfg_file)
+    configure_paths(settings, cfg)
     if settings.local_rank in [-1, 0]:
         print("New configuration is shown below.")
         for key in cfg.keys():

@@ -40,9 +40,14 @@ def build_dataloaders_hybrid(cfg, settings):
         if dataset_cls is None:
             raise ValueError(f"Dataset {dataset_name} not found")
 
+        root_dir = getattr(settings.env, 'unimod1k_dir', None) if dataset_name == 'UniMod1K' else None
+        if dataset_name == 'UniMod1K' and not root_dir:
+            raise ValueError("UniMod1K root directory is not configured. Set PATHS.DATA_ROOT or update local.py.")
+
         # Short-seq dataset (original 2-frame sampling)
         short_dataset = dataset_cls(
-            root=settings.env.unimod1k_dir if dataset_name == 'UniMod1K' else None,
+            root=root_dir,
+            nlp_root=getattr(settings.env, 'unimod1k_dir_nlp', None) if dataset_name == 'UniMod1K' else None,
             dtype='rgbcolormap'
         )
         short_seq_datasets.append(short_dataset)
@@ -204,8 +209,12 @@ def names2datasets(name_list, settings, image_loader):
             raise ValueError(f"Dataset {name} not found")
 
         if name == 'UniMod1K':
+            root_dir = getattr(settings.env, 'unimod1k_dir', None)
+            if not root_dir:
+                raise ValueError("UniMod1K root directory is not configured. Set PATHS.DATA_ROOT or update local.py.")
             dataset = dataset_cls(
-                root=settings.env.unimod1k_dir,
+                root=root_dir,
+                nlp_root=getattr(settings.env, 'unimod1k_dir_nlp', None),
                 dtype='rgbcolormap',
                 image_loader=image_loader
             )
@@ -215,4 +224,3 @@ def names2datasets(name_list, settings, image_loader):
         datasets.append(dataset)
 
     return datasets
-

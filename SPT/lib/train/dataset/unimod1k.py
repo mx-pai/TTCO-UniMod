@@ -13,8 +13,9 @@ import cv2
 
 from lib.train.dataset.depth_utils import get_rgbd_frame
 
+
 class UniMod1K(BaseVideoDataset):
-    def __init__(self, root=None, dtype='rgbcolormap', image_loader=jpeg4py_loader):
+    def __init__(self, root=None, nlp_root=None, dtype='rgbcolormap', image_loader=jpeg4py_loader):
         """
         args:
 
@@ -31,9 +32,11 @@ class UniMod1K(BaseVideoDataset):
                         if colormap, it returns the colormap by cv2,
                         if depth, it returns [depth, depth, depth]
         """
-        root = env_settings().unimod1k_dir if root is None else root
+        env = env_settings()
+        root = env.unimod1k_dir if root is None else root
+        nlp_root = env.unimod1k_dir_nlp if nlp_root is None else nlp_root
         super().__init__('UniMod1K', root, image_loader)
-        self.root_nlp = env_settings().unimod1k_dir_nlp
+        self.root_nlp = nlp_root
         self.root = root
         self.dtype = dtype
         self.sequence_list = self._build_sequence_list()

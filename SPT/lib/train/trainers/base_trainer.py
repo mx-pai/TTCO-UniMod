@@ -43,21 +43,24 @@ class BaseTrainer:
             self.settings = settings
 
         if self.settings.env.workspace_dir is not None:
-            self.settings.env.workspace_dir = os.path.expanduser(self.settings.env.workspace_dir)
-            '''2021.1.4 New function: specify checkpoint dir'''
-            if self.settings.save_dir is None:
-                self._checkpoint_dir = os.path.join(self.settings.env.workspace_dir, 'checkpoints')
-            else:
-                self._checkpoint_dir = os.path.join(self.settings.save_dir, 'checkpoints')
-            print("checkpoints will be saved to %s" % self._checkpoint_dir)
+            self.settings.env.workspace_dir = os.path.abspath(os.path.expanduser(self.settings.env.workspace_dir))
 
-            if self.settings.local_rank in [-1, 0]:
-                if not os.path.exists(self._checkpoint_dir):
-                    print("Training with multiple GPUs. checkpoints directory doesn't exist. "
-                          "Create checkpoints directory")
-                    os.makedirs(self._checkpoint_dir)
+        checkpoint_override = getattr(self.settings, 'checkpoint_dir', None)
+        if checkpoint_override is not None:
+            self._checkpoint_dir = os.path.abspath(os.path.expanduser(checkpoint_override))
+        elif self.settings.save_dir is not None:
+            save_dir_abs = os.path.abspath(os.path.expanduser(self.settings.save_dir))
+            self._checkpoint_dir = os.path.join(save_dir_abs, 'checkpoints')
+        elif self.settings.env.workspace_dir is not None:
+            workspace_dir = os.path.abspath(os.path.expanduser(self.settings.env.workspace_dir))
+            self._checkpoint_dir = os.path.join(workspace_dir, 'checkpoints')
         else:
             self._checkpoint_dir = None
+
+        if self._checkpoint_dir is not None:
+            print("checkpoints will be saved to %s" % self._checkpoint_dir)
+            if self.settings.local_rank in [-1, 0]:
+                os.makedirs(self._checkpoint_dir, exist_ok=True)
 
     def train(self, max_epochs, load_latest=False, fail_safe=True, load_previous_ckpt=False, distill=False):
         """Do training for the given number of epochs.

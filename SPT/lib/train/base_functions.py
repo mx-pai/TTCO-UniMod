@@ -1,3 +1,4 @@
+import os
 import torch
 from torch.utils.data.distributed import DistributedSampler
 # datasets related
@@ -5,6 +6,49 @@ from lib.train.dataset import UniMod1K
 from lib.train.data import sampler, opencv_loader, processing, LTRLoader
 import lib.train.data.transforms as tfm
 from lib.utils.misc import is_main_process
+
+
+def configure_paths(settings, cfg):
+    paths_cfg = getattr(cfg, 'PATHS', None)
+    if paths_cfg is None:
+        return
+
+    def _abs_path(path):
+        if path is None or path == '':
+            return None
+        return os.path.abspath(os.path.expanduser(path))
+
+    output_dir = _abs_path(getattr(paths_cfg, 'OUTPUT_DIR', None))
+    if output_dir is not None:
+        settings.save_dir = output_dir
+
+    checkpoint_dir = _abs_path(getattr(paths_cfg, 'CHECKPOINT_DIR', None))
+    if checkpoint_dir is not None:
+        settings.checkpoint_dir = checkpoint_dir
+
+    tensorboard_dir = _abs_path(getattr(paths_cfg, 'TENSORBOARD_DIR', None))
+    if tensorboard_dir is None:
+        base_for_tb = output_dir or getattr(settings, 'save_dir', None)
+        if base_for_tb is not None:
+            tensorboard_dir = os.path.join(os.path.abspath(os.path.expanduser(base_for_tb)), 'tensorboard')
+    pretrained_dir = _abs_path(getattr(paths_cfg, 'PRETRAINED_DIR', None))
+    data_root = _abs_path(getattr(paths_cfg, 'DATA_ROOT', None))
+    nlp_root = _abs_path(getattr(paths_cfg, 'NLP_ROOT', None))
+
+    env = settings.env
+    if hasattr(env, 'workspace_dir'):
+        if output_dir is not None:
+            env.workspace_dir = output_dir
+        elif getattr(env, 'workspace_dir', None) in (None, '') and getattr(settings, 'save_dir', None):
+            env.workspace_dir = os.path.abspath(os.path.expanduser(settings.save_dir))
+    if tensorboard_dir is not None and hasattr(env, 'tensorboard_dir'):
+        env.tensorboard_dir = tensorboard_dir
+    if pretrained_dir is not None and hasattr(env, 'pretrained_models'):
+        env.pretrained_models = pretrained_dir
+    if data_root is not None and hasattr(env, 'unimod1k_dir'):
+        env.unimod1k_dir = data_root
+    if nlp_root is not None and hasattr(env, 'unimod1k_dir_nlp'):
+        env.unimod1k_dir_nlp = nlp_root
 
 
 def update_settings(settings, cfg):
@@ -30,7 +74,13 @@ def names2datasets(name_list: list, settings, image_loader):
     for name in name_list:
         assert name in ["UniMod1K"]
         if name == 'UniMod1K':
-            datasets.append(UniMod1K(settings.env.unimod1k_dir, dtype='rgbcolormap', image_loader=image_loader))
+            root_dir = getattr(settings.env, 'unimod1k_dir', None)
+            if not root_dir:
+                raise ValueError("UniMod1K root directory is not configured. Set PATHS.DATA_ROOT or update local.py.")
+            datasets.append(UniMod1K(root=root_dir,
+                                     nlp_root=getattr(settings.env, 'unimod1k_dir_nlp', None),
+                                     dtype='rgbcolormap',
+                                     image_loader=image_loader))
 
 
     return datasets
@@ -66,14 +116,60 @@ def build_dataloaders(cfg, settings):
     sampler_mode = getattr(cfg.DATA, "SAMPLER_MODE", "causal")
     train_cls = getattr(cfg.TRAIN, "TRAIN_CLS", False)
     print("sampler_mode", sampler_mode)
-    dataset_train = sampler.VLTrackingSampler(datasets=names2datasets(cfg.DATA.TRAIN.DATASETS_NAME, settings, opencv_loader),
-                                            p_datasets=cfg.DATA.TRAIN.DATASETS_RATIO,
-                                            samples_per_epoch=cfg.DATA.TRAIN.SAMPLE_PER_EPOCH,
-                                            max_gap=cfg.DATA.MAX_SAMPLE_INTERVAL, num_search_frames=settings.num_search,
-                                            num_template_frames=settings.num_template, processing=data_processing_train,
-                                            frame_sample_mode=sampler_mode, train_cls=train_cls,
-                                            max_seq_len=cfg.DATA.MAX_SEQ_LENGTH, bert_model=cfg.MODEL.LANGUAGE.TYPE,
-                                            bert_path=cfg.MODEL.LANGUAGE.VOCAB_PATH)
+    total_samples = cfg.DATA.TRAIN.SAMPLE_PER_EPOCH
+    long_seq_ratio = getattr(cfg.DATA.TRAIN, "LONG_SEQ_RATIO", 0.0)
+    long_seq_ratio = max(0.0, min(1.0, long_seq_ratio))
+    long_seq_len = getattr(cfg.DATA.TRAIN, "LONG_SEQ_LENGTH", 4)
+
+    short_samples = int(round(total_samples * (1.0 - long_seq_ratio)))
+    long_samples = total_samples - short_samples
+
+    base_datasets = names2datasets(cfg.DATA.TRAIN.DATASETS_NAME, settings, opencv_loader)
+    datasets_list = []
+
+    if short_samples > 0:
+        dataset_short = sampler.VLTrackingSampler(
+            datasets=base_datasets,
+            p_datasets=cfg.DATA.TRAIN.DATASETS_RATIO,
+            samples_per_epoch=short_samples,
+            max_gap=cfg.DATA.MAX_SAMPLE_INTERVAL,
+            num_search_frames=settings.num_search,
+            num_template_frames=settings.num_template,
+            processing=data_processing_train,
+            frame_sample_mode=sampler_mode,
+            train_cls=train_cls,
+            max_seq_len=cfg.DATA.MAX_SEQ_LENGTH,
+            bert_model=cfg.MODEL.LANGUAGE.TYPE,
+            bert_path=cfg.MODEL.LANGUAGE.VOCAB_PATH
+        )
+        datasets_list.append(dataset_short)
+
+    if long_samples > 0:
+        from lib.train.data.sampler_longseq import LongSeqTrackingSampler
+
+        dataset_long = LongSeqTrackingSampler(
+            datasets=base_datasets,
+            p_datasets=cfg.DATA.TRAIN.DATASETS_RATIO,
+            samples_per_epoch=long_samples,
+            max_gap=cfg.DATA.MAX_SAMPLE_INTERVAL,
+            num_search_frames=1,
+            num_template_frames=settings.num_template,
+            processing=data_processing_train,
+            seq_length=long_seq_len,
+            max_seq_len=cfg.DATA.MAX_SEQ_LENGTH,
+            bert_model=cfg.MODEL.LANGUAGE.TYPE,
+            bert_path=cfg.MODEL.LANGUAGE.VOCAB_PATH
+        )
+        datasets_list.append(dataset_long)
+
+    if not datasets_list:
+        raise ValueError("No training samples configured. Please check SAMPLE_PER_EPOCH and LONG_SEQ_RATIO.")
+
+    if len(datasets_list) == 1:
+        dataset_train = datasets_list[0]
+    else:
+        from torch.utils.data import ConcatDataset
+        dataset_train = ConcatDataset(datasets_list)
 
     train_sampler = DistributedSampler(dataset_train) if settings.local_rank != -1 else None
     shuffle = False if settings.local_rank != -1 else True

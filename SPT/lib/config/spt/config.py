@@ -105,6 +105,15 @@ cfg.DATA.TEMPLATE.FACTOR = 2.0
 cfg.DATA.TEMPLATE.CENTER_JITTER = 0
 cfg.DATA.TEMPLATE.SCALE_JITTER = 0
 
+# PATHS
+cfg.PATHS = edict()
+cfg.PATHS.OUTPUT_DIR = ''
+cfg.PATHS.CHECKPOINT_DIR = ''
+cfg.PATHS.TENSORBOARD_DIR = ''
+cfg.PATHS.PRETRAINED_DIR = ''
+cfg.PATHS.DATA_ROOT = ''
+cfg.PATHS.NLP_ROOT = ''
+
 # TEST
 cfg.TEST = edict()
 cfg.TEST.TEMPLATE_FACTOR = 2.0
@@ -153,4 +162,3 @@ def update_config_from_file(filename):
     with open(filename) as f:
         exp_config = edict(yaml.safe_load(f))
         _update_config(cfg, exp_config)
-

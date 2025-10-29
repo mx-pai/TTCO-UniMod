@@ -22,6 +22,7 @@ from torch.nn.functional import l1_loss
 from lib.models.spt import build_spt
 from lib.train.actors import SPTActor
 from lib.train.trainers import LTRTrainer
+from lib.train.base_functions import configure_paths, update_settings, build_dataloaders, get_optimizer_scheduler
 import lib.train.admin.settings as ws_settings
 
 
@@ -71,11 +72,6 @@ def run_training_improved(args):
     prj_dir = os.path.dirname(__file__)
     settings.cfg_file = os.path.join(prj_dir, f'experiments/spt/{args.config}.yaml')
 
-    # Create log directory
-    log_dir = os.path.join(settings.save_dir, 'logs', 'train', 'spt', args.config)
-    os.makedirs(log_dir, exist_ok=True)
-    settings.log_file = os.path.join(log_dir, f'train_{args.config}.log')
-
     # Update config
     config_module = importlib.import_module("lib.config.spt.config")
     cfg = config_module.cfg
@@ -85,6 +81,12 @@ def run_training_improved(args):
         raise ValueError(f"Config file not found: {cfg_file}")
 
     config_module.update_config_from_file(cfg_file)
+    configure_paths(settings, cfg)
+
+    # Create log directory after resolving output paths
+    log_dir = os.path.join(settings.save_dir, 'logs', 'train', 'spt', args.config)
+    os.makedirs(log_dir, exist_ok=True)
+    settings.log_file = os.path.join(log_dir, f'train_{args.config}.log')
 
     print("\n" + "="*80)
     print("SPT IMPROVED TRAINING - Configuration")
@@ -95,7 +97,6 @@ def run_training_improved(args):
     print("="*80 + "\n")
 
     # Update settings based on cfg
-    from lib.train.base_functions import update_settings, build_dataloaders, get_optimizer_scheduler
     update_settings(settings, cfg)
 
     # Build dataloaders with improved config
