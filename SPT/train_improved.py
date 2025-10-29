@@ -29,7 +29,10 @@ import lib.train.admin.settings as ws_settings
 def parse_args():
     parser = argparse.ArgumentParser(description='Train SPT with all improvements')
     parser.add_argument('--config', type=str, default='unimod1k_improved', help='Config file name (without .yaml)')
-    parser.add_argument('--save_dir', type=str, default='./checkpoints_improved', help='Directory to save checkpoints')
+    parser.add_argument('--output_root', type=str, default=None,
+                        help='Optional base directory for this run (overrides PATHS.OUTPUT_DIR)')
+    parser.add_argument('--run_name', type=str, default=None,
+                        help='Optional identifier for this run (default: timestamp)')
     parser.add_argument('--auto_eval', action='store_true', help='Enable automatic evaluation during training')
     parser.add_argument('--eval_epochs', type=int, nargs='+', default=[40, 80, 120, 160, 200, 240],
                        help='Epochs to run evaluation')
@@ -64,7 +67,8 @@ def run_training_improved(args):
 
     settings.local_rank = -1  # Single GPU mode
     settings.use_gpu = True
-    settings.save_dir = os.path.abspath(args.save_dir)
+    settings.save_dir = os.path.abspath(args.output_root) if args.output_root else None
+    settings.run_name = args.run_name
     # CRITICAL: Set project_path for checkpoint saving
     settings.project_path = f'train/spt/{args.config}'
 
@@ -83,14 +87,14 @@ def run_training_improved(args):
     config_module.update_config_from_file(cfg_file)
     configure_paths(settings, cfg)
 
-    # Create log directory after resolving output paths
-    log_dir = os.path.join(settings.save_dir, 'logs', 'train', 'spt', args.config)
-    os.makedirs(log_dir, exist_ok=True)
-    settings.log_file = os.path.join(log_dir, f'train_{args.config}.log')
+    log_filename = f"{settings.script_name}-{settings.config_name}-{settings.run_name}.log"
+    settings.log_file = os.path.join(settings.log_dir, log_filename)
 
     print("\n" + "="*80)
     print("SPT IMPROVED TRAINING - Configuration")
     print("="*80)
+    print(f"Run name: {settings.run_name}")
+    print(f"Run directory: {settings.paths['run_root']}")
     for key in cfg.keys():
         print(f"\n[{key}]")
         print(cfg[key])
@@ -141,8 +145,7 @@ def run_training_improved(args):
     trainer = LTRTrainer(actor, [loader_train], optimizer, settings, lr_scheduler, use_amp=use_amp)
 
     # Setup checkpoint auto-cleanup
-    checkpoint_dir = os.path.join(settings.save_dir, 'checkpoints', 'train', 'spt', args.config)
-    os.makedirs(checkpoint_dir, exist_ok=True)
+    checkpoint_dir = settings.checkpoint_dir
 
     # Setup auto-evaluation callback if enabled
     if args.auto_eval:

@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 import torch
 from torch.utils.data.distributed import DistributedSampler
 # datasets related
@@ -10,37 +11,74 @@ from lib.utils.misc import is_main_process
 
 def configure_paths(settings, cfg):
     paths_cfg = getattr(cfg, 'PATHS', None)
-    if paths_cfg is None:
-        return
 
     def _abs_path(path):
         if path is None or path == '':
             return None
         return os.path.abspath(os.path.expanduser(path))
 
-    output_dir = _abs_path(getattr(paths_cfg, 'OUTPUT_DIR', None))
-    if output_dir is not None:
-        settings.save_dir = output_dir
-
-    checkpoint_dir = _abs_path(getattr(paths_cfg, 'CHECKPOINT_DIR', None))
-    if checkpoint_dir is not None:
-        settings.checkpoint_dir = checkpoint_dir
-
-    tensorboard_dir = _abs_path(getattr(paths_cfg, 'TENSORBOARD_DIR', None))
-    if tensorboard_dir is None:
-        base_for_tb = output_dir or getattr(settings, 'save_dir', None)
-        if base_for_tb is not None:
-            tensorboard_dir = os.path.join(os.path.abspath(os.path.expanduser(base_for_tb)), 'tensorboard')
-    pretrained_dir = _abs_path(getattr(paths_cfg, 'PRETRAINED_DIR', None))
-    data_root = _abs_path(getattr(paths_cfg, 'DATA_ROOT', None))
-    nlp_root = _abs_path(getattr(paths_cfg, 'NLP_ROOT', None))
-
     env = settings.env
+
+    run_name_cfg = getattr(paths_cfg, 'RUN_NAME', None) if paths_cfg is not None else None
+    if not getattr(settings, 'run_name', None):
+        settings.run_name = run_name_cfg or datetime.now().strftime('%Y%m%d-%H%M%S')
+
+    base_output = _abs_path(getattr(paths_cfg, 'OUTPUT_DIR', None)) if paths_cfg is not None else None
+    if base_output is None:
+        fallback_root = getattr(settings, 'save_dir', None)
+        if fallback_root:
+            fallback_root = os.path.abspath(os.path.expanduser(fallback_root))
+        else:
+            fallback_root = getattr(env, 'workspace_dir', None)
+            if fallback_root:
+                fallback_root = os.path.abspath(os.path.expanduser(fallback_root))
+        if fallback_root is None:
+            fallback_root = os.path.join(os.getcwd(), 'outputs')
+        else:
+            fallback_root = os.path.join(fallback_root, 'outputs')
+        base_output = fallback_root
+
+    run_dir_override = _abs_path(getattr(paths_cfg, 'RUN_DIR', None)) if paths_cfg is not None else None
+    if run_dir_override is not None:
+        run_root = run_dir_override
+    else:
+        run_root = os.path.join(base_output, settings.config_name, settings.run_name)
+    os.makedirs(run_root, exist_ok=True)
+
+    tensorboard_dir = _abs_path(getattr(paths_cfg, 'TENSORBOARD_DIR', None)) if paths_cfg is not None else None
+    if tensorboard_dir is None:
+        tensorboard_dir = os.path.join(run_root, 'tensorboard')
+
+    checkpoint_dir = _abs_path(getattr(paths_cfg, 'CHECKPOINT_DIR', None)) if paths_cfg is not None else None
+    if checkpoint_dir is None:
+        checkpoint_dir = os.path.join(run_root, 'checkpoints')
+
+    log_dir = _abs_path(getattr(paths_cfg, 'LOG_DIR', None)) if paths_cfg is not None else None
+    if log_dir is None:
+        log_dir = os.path.join(run_root, 'logs')
+
+    pretrained_dir = _abs_path(getattr(paths_cfg, 'PRETRAINED_DIR', None)) if paths_cfg is not None else None
+    data_root = _abs_path(getattr(paths_cfg, 'DATA_ROOT', None)) if paths_cfg is not None else None
+    nlp_root = _abs_path(getattr(paths_cfg, 'NLP_ROOT', None)) if paths_cfg is not None else None
+
+    settings.save_dir = run_root
+    settings.checkpoint_dir = checkpoint_dir
+    settings.log_dir = log_dir
+    settings.paths = {
+        'run_root': run_root,
+        'log_dir': log_dir,
+        'tensorboard_dir': tensorboard_dir,
+        'checkpoint_dir': checkpoint_dir,
+        'base_output': base_output
+    }
+    settings.tensorboard_dir = tensorboard_dir
+
+    os.makedirs(checkpoint_dir, exist_ok=True)
+    os.makedirs(log_dir, exist_ok=True)
+    os.makedirs(tensorboard_dir, exist_ok=True)
+
     if hasattr(env, 'workspace_dir'):
-        if output_dir is not None:
-            env.workspace_dir = output_dir
-        elif getattr(env, 'workspace_dir', None) in (None, '') and getattr(settings, 'save_dir', None):
-            env.workspace_dir = os.path.abspath(os.path.expanduser(settings.save_dir))
+        env.workspace_dir = run_root
     if tensorboard_dir is not None and hasattr(env, 'tensorboard_dir'):
         env.tensorboard_dir = tensorboard_dir
     if pretrained_dir is not None and hasattr(env, 'pretrained_models'):

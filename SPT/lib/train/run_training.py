@@ -24,6 +24,7 @@ def init_seeds(seed):
 
 def run_training(script_name, config_name, cudnn_benchmark=True, local_rank=-1, save_dir=None, base_seed=None,
                  use_lmdb=False, script_name_prv=None, config_name_prv=None,
+                 run_name=None,
                  distill=None, script_teacher=None, config_teacher=None):
     """Run the train script.
     args:
@@ -32,7 +33,7 @@ def run_training(script_name, config_name, cudnn_benchmark=True, local_rank=-1, 
         cudnn_benchmark: Use cudnn benchmark or not (default is True).
     """
     if save_dir is None:
-        print("save_dir dir is not given. Use the default dir instead.")
+        print("save_dir/output_root not specified; falling back to config/WORKSPACE settings.")
     # This is needed to avoid strange crashes related to opencv
     cv.setNumThreads(0)
 
@@ -54,7 +55,8 @@ def run_training(script_name, config_name, cudnn_benchmark=True, local_rank=-1, 
     if script_name_prv is not None and config_name_prv is not None:
         settings.project_path_prv = 'train/{}/{}'.format(script_name_prv, config_name_prv)
     settings.local_rank = local_rank
-    settings.save_dir = os.path.abspath(save_dir)
+    settings.save_dir = os.path.abspath(save_dir) if save_dir else None
+    settings.run_name = run_name
     settings.use_lmdb = use_lmdb
     prj_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
     settings.cfg_file = os.path.join(prj_dir, 'experiments/%s/%s.yaml' % (script_name, config_name))
@@ -79,9 +81,11 @@ def main():
     parser.add_argument('--config', type=str, default='unimod1k', help="Name of the config file.")
     parser.add_argument('--cudnn_benchmark', type=bool, default=True, help='Set cudnn benchmark on (1) or off (0) (default is on).')
     parser.add_argument('--local_rank', default=-1, type=int, help='node rank for distributed training')
-    parser.add_argument('--save_dir', type=str,
-                        default='./',
-                        help='the directory to save checkpoints and logs')
+    parser.add_argument('--output_root', type=str,
+                        default=None,
+                        help='Base directory for this run (overrides PATHS.OUTPUT_DIR)')
+    parser.add_argument('--run_name', type=str, default=None,
+                        help='Custom name for this run (default: timestamp)')
     parser.add_argument('--seed', type=int, default=42, help='seed for random numbers')
     parser.add_argument('--use_lmdb', type=int, choices=[0, 1], default=0)  # whether datasets are in lmdb format
     parser.add_argument('--script_prv', type=str, default=None, help='Name of the train script of previous model.')
@@ -99,7 +103,8 @@ def main():
     else:
         torch.cuda.set_device(0)
     run_training(args.script, args.config, cudnn_benchmark=args.cudnn_benchmark,
-                 local_rank=args.local_rank, save_dir=args.save_dir, base_seed=args.seed,
+                 local_rank=args.local_rank, save_dir=args.output_root, base_seed=args.seed,
+                 run_name=args.run_name,
                  use_lmdb=args.use_lmdb, script_name_prv=args.script_prv, config_name_prv=args.config_prv,
                  distill=args.distill, script_teacher=args.script_teacher, config_teacher=args.config_teacher)
 

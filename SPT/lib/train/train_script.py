@@ -37,17 +37,17 @@ def run(settings):
     update_settings(settings, cfg)
 
     # Record the training log
-    log_dir = os.path.join(settings.save_dir, 'logs')
+    log_dir = getattr(settings, 'log_dir', None) or os.path.join(settings.save_dir, 'logs')
     if settings.local_rank in [-1, 0]:
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
-    settings.log_file = os.path.join(log_dir, "%s-%s.log" % (settings.script_name, settings.config_name))
+        os.makedirs(log_dir, exist_ok=True)
+    log_filename = "%s-%s-%s.log" % (settings.script_name, settings.config_name, settings.run_name)
+    settings.log_file = os.path.join(log_dir, log_filename)
 
     # Build dataloaders
     loader_train = build_dataloaders(cfg, settings)
 
     if "RepVGG" in cfg.MODEL.BACKBONE.TYPE or "swin" in cfg.MODEL.BACKBONE.TYPE or "LightTrack" in cfg.MODEL.BACKBONE.TYPE:
-        cfg.ckpt_dir = settings.save_dir
+        cfg.ckpt_dir = settings.checkpoint_dir
 
     # Create network
     net = build_spt(cfg)
