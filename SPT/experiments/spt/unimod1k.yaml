@@ -86,8 +86,6 @@ TEST:
   LANG_THRESHOLD: 0.3
 PATHS:
   OUTPUT_DIR: '/root/autodl-tmp/spt_runs'
-  CHECKPOINT_DIR: '/root/autodl-tmp/spt_runs/checkpoints'
-  TENSORBOARD_DIR: '/root/autodl-tmp/spt_runs/tensorboard'
   PRETRAINED_DIR: '/root/autodl-tmp'
   DATA_ROOT: '/root/autodl-tmp/data/1-训练验证集/TrainSet'
   NLP_ROOT: '/root/autodl-tmp/data/1-训练验证集/TrainSet'
