@@ -6,6 +6,8 @@
 
 本目录包含 UniMod1K 论文中的多模态追踪器 SPT 的官方实现，以及我们当前比赛使用的改进版训练脚本。
 
+> **Source**: SPT 模块源自原始 UniMod1K 发布仓库（示例参考 [UniMod1K 官方仓库](https://github.com/Ma-Xu/UniMod1K)），本版本在其基础上进行了定制化修改。
+
 ---
 
 ## 1. 环境与依赖
