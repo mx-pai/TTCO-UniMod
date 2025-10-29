@@ -209,9 +209,56 @@ def build_dataloaders(cfg, settings):
     transform_joint = tfm.Transform(tfm.ToGrayscale(probability=0.05),
                                     tfm.RandomHorizontalFlip(probability=0.5))
 
-    transform_train = tfm.Transform(tfm.ToTensorAndJitter(0.2),
-                                    tfm.RandomHorizontalFlip_Norm(probability=0.5),
-                                    tfm.Normalize(mean=cfg.DATA.MEAN, std=cfg.DATA.STD))
+    aug_transforms = [tfm.ToTensorAndJitter(0.2)]
+
+    aug_cfg = getattr(cfg.TRAIN, 'AUG', None)
+    if aug_cfg is not None:
+        color_cfg = getattr(aug_cfg, 'COLOR_JITTER', None)
+        if color_cfg is not None and getattr(color_cfg, 'ENABLED', False):
+            aug_transforms.append(
+                tfm.TensorColorJitter(
+                    brightness=getattr(color_cfg, 'BRIGHTNESS', 0.2),
+                    contrast=getattr(color_cfg, 'CONTRAST', 0.2),
+                    saturation=getattr(color_cfg, 'SATURATION', 0.2),
+                    hue=getattr(color_cfg, 'HUE', 0.02),
+                    probability=getattr(color_cfg, 'PROBABILITY', 0.8)
+                )
+            )
+        blur_cfg = getattr(aug_cfg, 'GAUSSIAN_BLUR', None)
+        if blur_cfg is not None and getattr(blur_cfg, 'ENABLED', False):
+            sigma = getattr(blur_cfg, 'SIGMA', (0.1, 2.0))
+            if isinstance(sigma, list):
+                sigma = tuple(sigma)
+            aug_transforms.append(
+                tfm.RandomGaussianBlur(
+                    kernel_size=getattr(blur_cfg, 'KERNEL_SIZE', 3),
+                    sigma=sigma,
+                    probability=getattr(blur_cfg, 'PROBABILITY', 0.1)
+                )
+            )
+
+    aug_transforms.append(tfm.RandomHorizontalFlip_Norm(probability=0.5))
+
+    if aug_cfg is not None:
+        er_cfg = getattr(aug_cfg, 'RANDOM_ERASE', None)
+        if er_cfg is not None and getattr(er_cfg, 'ENABLED', False):
+            scale = getattr(er_cfg, 'SCALE', (0.02, 0.33))
+            ratio = getattr(er_cfg, 'RATIO', (0.3, 3.3))
+            if isinstance(scale, list):
+                scale = tuple(scale)
+            if isinstance(ratio, list):
+                ratio = tuple(ratio)
+            aug_transforms.append(
+                tfm.TensorRandomErasing(
+                    probability=getattr(er_cfg, 'PROBABILITY', 0.2),
+                    scale=scale,
+                    ratio=ratio
+                )
+            )
+
+    aug_transforms.append(tfm.Normalize(mean=cfg.DATA.MEAN, std=cfg.DATA.STD))
+
+    transform_train = tfm.Transform(aug_transforms)
 
 
     # The tracking pairs processing module

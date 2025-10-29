@@ -77,6 +77,24 @@ TRAIN:
   VAL_EPOCH_INTERVAL: 20
   WEIGHT_DECAY: 0.0002
   LANG_WEIGHT: 1.0
+  AUG:
+    COLOR_JITTER:
+      ENABLED: true
+      BRIGHTNESS: 0.2
+      CONTRAST: 0.2
+      SATURATION: 0.2
+      HUE: 0.02
+      PROBABILITY: 0.8
+    GAUSSIAN_BLUR:
+      ENABLED: true
+      KERNEL_SIZE: 3
+      SIGMA: [0.1, 2.0]
+      PROBABILITY: 0.1
+    RANDOM_ERASE:
+      ENABLED: true
+      PROBABILITY: 0.2
+      SCALE: [0.02, 0.33]
+      RATIO: [0.3, 3.3]
 TEST:
   EPOCH: 240
   SEARCH_FACTOR: 5.0

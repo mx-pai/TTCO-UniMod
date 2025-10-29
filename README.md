@@ -10,10 +10,10 @@ The link of the paper will be released soon. Here are some samples of the datase
 
 ## Download
 
-The RGB-D images of UniMod1K dataset are available on [Baidu Cloud Disk](https://pan.baidu.com/s/1R3NG_-FKv6Ztx_aBwQJ4-w?pwd=ctnk) and [Google Drive](https://drive.google.com/drive/folders/1Z2PnWEgdZG0KVI2MX5chWddNlbuuEug3?usp=share_link). 
+The RGB-D images of UniMod1K dataset are available on [Baidu Cloud Disk](https://pan.baidu.com/s/1R3NG_-FKv6Ztx_aBwQJ4-w?pwd=ctnk) and [Google Drive](https://drive.google.com/drive/folders/1Z2PnWEgdZG0KVI2MX5chWddNlbuuEug3?usp=share_link).
 Besides, the text files of the UniMod1K can be downloaded [here](https://drive.google.com/drive/folders/1xUWch1hBMe6ldpiKftumQidlftxsgWoG?usp=drive_link).
 
-## Dataset 
+## Dataset
 RGB-D sequences and the files of bounding box labels:
 ```
 --UniMod1K
@@ -27,7 +27,7 @@ RGB-D sequences and the files of bounding box labels:
            |--depth
               |--00000001.png
               |--00000002.png
-              ...           
+              ...
         |--adapter2
         ...
     |--Animal
@@ -40,10 +40,10 @@ RGB-D sequences and the files of bounding box labels:
            |--depth
               |--00000001.png
               |--00000002.png
-              ...            
+              ...
        |--bear1
         ...
-    ... 
+    ...
 ```
 The natural language files:
 ```
@@ -56,11 +56,11 @@ The natural language files:
         ...
     |--Animal
        |--alpaca1
-           |--nlp.txt           
+           |--nlp.txt
        |--bear1
-           |--nlp.txt        
+           |--nlp.txt
         ...
-    ... 
+    ...
 ```
 
 ## Dataset Format
@@ -78,7 +78,7 @@ python ./read_dataset.py --data_dir '/path/to/UniMod1K/' --nlp_dir '/path/to/nlp
 ## Baselines Codes and pre-trained models
 For the usages of the baselines and the UniMod1K, please refer to the [SPT README](./SPT/README.md) 以及更细的 [Quick Start](./SPT/QUICK_START.md)。当前代码默认假设数据与预训练模型位于 `/root/autodl-tmp` 下，可按文档说明修改配置。
 
-> **Source**: 本仓库基于原始 UniMod1K 论文的公开实现（示例参考 [UniMod1K 官方仓库](https://github.com/Ma-Xu/UniMod1K)）。我们在此基础上按照比赛需求进行了二次调整。
+> **Source**: 本仓库基于原始 UniMod1K 论文的公开实现（示例参考 [UniMod1K 官方仓库](https://github.com/xuefeng-zhu5/UniMod1K)）。我们在此基础上按照比赛需求进行了二次调整。
 
 ## Monocular Depth Estimation
 The subset for monocular depth estimation can be downloaded from [Baidu Cloud](https://pan.baidu.com/s/1ClHpwC1_BAN0GZSKT2jxaQ?pwd=l8um) or [Google Drive](https://drive.google.com/file/d/1aAokzgUssm26G_DHqKtF-FBzSErvpSrz/view?usp=drive_link).

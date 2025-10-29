@@ -4,6 +4,7 @@ import math
 import cv2 as cv
 import torch
 import torch.nn.functional as F
+import torchvision.transforms as tv_transforms
 import torchvision.transforms.functional as tvisf
 from PIL import Image
 import collections
@@ -239,6 +240,73 @@ class ToTensorAndJitter(TransformBase):
             return att.to(torch.bool)
         else:
             raise ValueError ("dtype must be np.ndarray or torch.Tensor")
+
+
+class TensorColorJitter(TransformBase):
+    """Apply torchvision ColorJitter on tensor images."""
+    def __init__(self, brightness=0.0, contrast=0.0, saturation=0.0, hue=0.0, probability=1.0):
+        super().__init__()
+        self.probability = probability
+        self.jitter = tv_transforms.ColorJitter(brightness=brightness,
+                                                contrast=contrast,
+                                                saturation=saturation,
+                                                hue=hue)
+
+    def roll(self):
+        return random.random() < self.probability
+
+    def transform_image(self, image, do_jitter):
+        if not do_jitter:
+            return image
+        if not torch.is_tensor(image):
+            return image
+        if image.shape[0] > 3:
+            rgb = self.jitter(image[:3])
+            return torch.cat([rgb, image[3:]], dim=0)
+        return self.jitter(image)
+
+
+class RandomGaussianBlur(TransformBase):
+    """Random Gaussian Blur on tensor images."""
+    def __init__(self, kernel_size=3, sigma=(0.1, 2.0), probability=0.0):
+        super().__init__()
+        self.kernel_size = kernel_size if isinstance(kernel_size, (list, tuple)) else (kernel_size, kernel_size)
+        self.sigma = sigma
+        self.probability = probability
+
+    def roll(self):
+        apply = random.random() < self.probability
+        if not apply:
+            return (False, 0.0)
+        if isinstance(self.sigma, (tuple, list)):
+            sigma_val = random.uniform(self.sigma[0], self.sigma[1])
+        else:
+            sigma_val = self.sigma
+        return (True, sigma_val)
+
+    def transform_image(self, image, apply_blur, sigma):
+        if not apply_blur or not torch.is_tensor(image):
+            return image
+        blur = tv_transforms.GaussianBlur(self.kernel_size, sigma)
+        if image.shape[0] > 3:
+            rgb = blur(image[:3])
+            return torch.cat([rgb, image[3:]], dim=0)
+        return blur(image)
+
+
+class TensorRandomErasing(TransformBase):
+    """Apply RandomErasing on tensor images."""
+    def __init__(self, probability=0.0, scale=(0.02, 0.33), ratio=(0.3, 3.3), value=0):
+        super().__init__()
+        self.erasing = tv_transforms.RandomErasing(p=probability, scale=scale, ratio=ratio, value=value, inplace=False)
+
+    def transform_image(self, image):
+        if not torch.is_tensor(image):
+            return image
+        if image.shape[0] > 3:
+            rgb = self.erasing(image[:3])
+            return torch.cat([rgb, image[3:]], dim=0)
+        return self.erasing(image)
 
 
 class Normalize(TransformBase):

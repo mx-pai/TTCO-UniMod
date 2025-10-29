@@ -26,6 +26,8 @@ PATHS:
   OUTPUT_DIR: '/root/autodl-tmp/spt_runs'
 ```
 
+> 可通过 `TRAIN.AUG` 段开启/调整额外的数据增广（如颜色抖动、模糊、随机擦除等）。
+
 ---
 
 ## 2️⃣ 启动训练

@@ -6,7 +6,7 @@
 
 本目录包含 UniMod1K 论文中的多模态追踪器 SPT 的官方实现，以及我们当前比赛使用的改进版训练脚本。
 
-> **Source**: SPT 模块源自原始 UniMod1K 发布仓库（示例参考 [UniMod1K 官方仓库](https://github.com/Ma-Xu/UniMod1K)），本版本在其基础上进行了定制化修改。
+> **Source**: SPT 模块源自原始 UniMod1K 发布仓库（示例参考 [UniMod1K 官方仓库](https://github.com/xuefeng-zhu5/UniMod1K)），本版本在其基础上进行了定制化修改。
 
 ---
 
@@ -52,6 +52,8 @@ PATHS:
 ```
 
 `OUTPUT_DIR` 会自动生成 `/<config>/<run_name>/` 子目录，保存 checkpoints、日志、tensorboard、metadata、配置快照等。
+
+若需更强的数据增广，可在 `TRAIN.AUG` 中分别开启 `COLOR_JITTER`、`GAUSSIAN_BLUR` 与 `RANDOM_ERASE` 并调整参数。
 
 ---
 
@@ -134,4 +136,4 @@ python3 auto_clean.py \
 
 ## 致谢
 
-本项目基于 [STARK](https://github.com/researchmm/Stark) 实现，感谢原作者开源贡献。
+本项目基于 [Unimod1K](https://github.com/xuefeng-zhu5/UniMod1K) 实现，感谢原作者开源贡献。
