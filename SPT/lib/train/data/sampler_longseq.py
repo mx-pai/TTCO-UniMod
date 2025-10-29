@@ -85,19 +85,26 @@ class LongSeqTrackingSampler(torch.utils.data.Dataset):
                 if num_frames < 2:
                     continue
 
-                seq_len = min(self.seq_length, max(1, num_frames - 1))
+                seq_len = self.seq_length
 
                 template_ids = self._sample_visible_ids(visible, num_ids=1,
-                                                        max_id=max(1, num_frames - seq_len))
+                                                        max_id=max(1, num_frames - 1))
                 if not template_ids:
                     continue
                 template_id = template_ids[0]
 
-                max_forward_gap = num_frames - template_id - seq_len
-                if max_forward_gap < 1:
-                    continue
-                gap = random.randint(1, min(self.max_gap, max_forward_gap))
-                search_ids = list(range(template_id + gap, template_id + gap + seq_len))
+                available_forward = max(1, num_frames - template_id - 1)
+                effective_len = min(self.seq_length, available_forward)
+
+                if effective_len <= 0:
+                    search_ids = [template_id] * self.seq_length
+                else:
+                    max_forward_gap = max(1, num_frames - template_id - effective_len)
+                    gap = random.randint(1, min(self.max_gap, max_forward_gap))
+                    search_ids = [template_id + gap + i for i in range(effective_len)]
+                    search_ids = [min(num_frames - 1, idx) for idx in search_ids]
+                    while len(search_ids) < self.seq_length:
+                        search_ids.append(search_ids[-1])
 
                 template_frames, template_anno, _ = dataset.get_frames(seq_id, [template_id], seq_info_dict)
                 search_frames, search_anno, meta_obj = dataset.get_frames(seq_id, search_ids, seq_info_dict)
