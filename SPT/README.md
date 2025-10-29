@@ -1,80 +1,135 @@
-# UniMod1K: Towards a More Universal Large-Scale Dataset and Benchmark for Multi-Modal Learning
+# SPT Tracking on UniMod1K
 
-The official implementation of the multi-modal (Vision, Depth and Language) SPT tracker of the paper **UniMod1K: Towards a More Universal Large-Scale Dataset and Benchmark for Multi-Modal Learning**
+<p align="center">
+  <img width="75%" src="./spt_vdl_framework.jpg" alt="SPT framework"/>
+</p>
 
-<center><img width="75%" alt="" src="./spt_vdl_framework.jpg"/></center>
+本目录包含 UniMod1K 论文中的多模态追踪器 SPT 的官方实现，以及我们当前比赛使用的改进版训练脚本。
 
-## Usage
-### Installation
+---
 
-Install the environment using Miniconda (Python 3.6)
-```
-cd /path/to/UniMod1K/SPT
+## 1. 环境与依赖
+
+```bash
+cd /root/autodl-tmp/UniMod1K/SPT
 conda env create -f environment.yml
 conda activate spt
+export PYTHONPATH=$(pwd):$PYTHONPATH
 ```
 
-> **Note**  
-> `jpeg4py` requires `libturbojpeg` on the host system. On Ubuntu you can install it with  
-> `sudo apt-get install libturbojpeg`.
+> `jpeg4py` 需要系统安装 `libturbojpeg`。Ubuntu 上执行 `sudo apt-get install libturbojpeg`。
 
-### Data Preparation
-The training dataset is the [**UniMod1K**]
+---
+
+## 2. 数据与预训练模型
+
+请确保以下文件存在（可根据实际目录调整）：
+
 ```
---UniMod1K
-    |--Adapter
-        |--adapter1
-        |--adapter2
-        ...
-    |--Animal
-       |--alpaca1
-       |--bear1
-        ...
-    ... 
+/root/autodl-tmp
+├── data/1-训练验证集/TrainSet/…         # RGB/Depth + NLP (nlp.txt) 组织方式同原数据
+├── STARKS_ep0500.pth.tar                 # STARK-S 预训练权重
+└── bert/
+    ├── bert-base-uncased.tar.gz
+    └── bert-base-uncased-vocab.txt
 ```
 
-### Set project paths
-Run the following command to set paths for this project
-```
-python tracking/create_default_local_file.py --workspace_dir . --data_dir ./data --save_dir .
+更新 `experiments/spt/unimod1k.yaml`（或 `unimod1k_improved.yaml`）中的路径：
+
+```yaml
+MODEL:
+  PRETRAINED: '/root/autodl-tmp/STARKS_ep0500.pth.tar'
+  LANGUAGE:
+    PATH: '/root/autodl-tmp/bert/bert-base-uncased.tar.gz'
+    VOCAB_PATH: '/root/autodl-tmp/bert/bert-base-uncased-vocab.txt'
+
+PATHS:
+  DATA_ROOT: '/root/autodl-tmp/data/1-训练验证集/TrainSet'
+  NLP_ROOT:  '/root/autodl-tmp/data/1-训练验证集/TrainSet'
+  OUTPUT_DIR: '/root/autodl-tmp/spt_runs'
 ```
 
-After running this command, you can also modify paths by editing these two files
-```
-lib/train/admin/local.py  # paths about training
-lib/test/evaluation/local.py  # paths about testing
-```
-### Training
-Download the pretrained weight [[BERT pretrained weight](https://drive.google.com/drive/folders/1Fi-4TSaIP4B_TPi2Jme2sxZRdH9l5NPN?usp=share_link)] put it under `$PROJECT_ROOT$/pretrained_models`. 
-Set the MODEL.LANGUAGE.PATH and MODEL.LANGUAGE.VOCAB_PATH in ./experiments/spt/unimod1k.yaml.
+`OUTPUT_DIR` 会自动生成 `/<config>/<run_name>/` 子目录，保存 checkpoints、日志、tensorboard、metadata、配置快照等。
 
-Download the pretrained [Stark-s model](https://drive.google.com/drive/folders/142sMjoT5wT6CuRiFT5LLejgr7VLKmaC4)
-and put it under `$PROJECT_ROOT$/pretrained_models/`. 
-Set the MODEL.PRETRAINED path in ./experiments/spt/unimod1k.yaml.
+---
 
-Training with multiple GPUs using DDP (4 RTX3090Ti with batch size of 16)
-```
-export PYTHONPATH=/path/to/SPT:$PYTHONPATH
-python -m torch.distributed.launch --nproc_per_node=4 ./lib/train/run_training.py  
-```
-or using single GPU:
-```
-python ./lib/train/run_training.py  
+## 3. 启动训练
+
+### 标准训练
+```bash
+python3 lib/train/run_training.py \
+  --config unimod1k \
+  --run_name baseline_$(date +%m%d_%H%M)
 ```
 
-### Test
-Edit ./lib/test/evaluation/local.py to set the test set path, then run
+### 改进版训练（长序列采样等增强）
+```bash
+python3 train_improved.py \
+  --config unimod1k_improved \
+  --run_name improved_$(date +%m%d_%H%M)
 ```
-python ./tracking/test.py
+
+可选参数：
+- `--run_name`：自定义实验名称；默认使用时间戳。
+- `--output_root`：覆盖 YAML 中的 `PATHS.OUTPUT_DIR`。
+- `--auto_eval`/`--eval_epochs`（仅 `train_improved.py`）：训练中按指定 epoch 自动调用评测脚本。
+
+运行日志保存在 `runs/<config>/<run_name>/logs/`。目录下还会生成 `metadata/`（包含配置快照与 git 信息）。
+
+---
+
+## 4. 监控与评测
+
+```bash
+# 日志
+tail -f /root/autodl-tmp/spt_runs/<config>/<run_name>/logs/*.log
+
+# tensorboard（如配置）
+tensorboard --logdir /root/autodl-tmp/spt_runs/<config>/<run_name>/tensorboard --port 6006
+
+# GPU 监控
+watch -n 1 nvidia-smi
 ```
-You can also use the [pre-trained model](https://drive.google.com/file/d/1aU1FWERBab0aGR9nxwN138JG1lLQlnU5/view?usp=drive_link), 
-and set the path in ./lib/test/parameter/spt.py
 
-### Evaluation
-Put the raw results in the [VOT Toolkit](https://github.com/votchallenge/toolkit) workspace, then use the command of vot analysis. The tutorial of VOT Toolkit can be found [here](https://www.votchallenge.net/howto/overview.html).
+评测模型：
+1. 在配置文件里设置 `TEST.EPOCH` 为要评测的 checkpoint 编号。
+2. 运行：
+   ```bash
+   python3 tracking/test.py \
+     --tracker_name spt \
+     --tracker_param unimod1k \
+     --dataset_name unimod1k \
+     --runid 1 \
+     --threads 0 \
+     --num_gpus 1
+   ```
+3. 结果保存在 `lib/test/tracking_results/spt/<tracker_param>_001/`。
 
-## Acknowledgment
-- This repo is based on [Stark](https://github.com/researchmm/Stark) which is an excellent work.
+---
 
-## Contact
-If you have any question, please feel free to contact **Ma Xu** at [b23041708@njupt.edu.cn](mailto:b23041708@njupt.edu.cn)
+## 5. 清理旧实验
+
+使用 `auto_clean.py` 释放空间，例如仅保留每个配置最新 3 个 run：
+
+```bash
+python3 auto_clean.py \
+  --root /root/autodl-tmp/spt_runs \
+  --keep 3 \
+  --force
+```
+
+支持 `--config unimod1k_improved` 指定配置、`--quiet` 安静输出等。
+
+---
+
+## 6. 更多说明
+
+- 详细的分步操作请参见 [`QUICK_START.md`](./QUICK_START.md)。
+- 若需要调整数据读取或训练策略，可参考源码中 `lib/train/base_functions.py`、`lib/train/data/sampler_longseq.py`、`lib/train/actors/spt.py`。
+- 评测/集成 VOT Toolkit 的旧文档已移除；如需使用，可自行参考 VOT 官方指南。
+
+---
+
+## 致谢
+
+本项目基于 [STARK](https://github.com/researchmm/Stark) 实现，感谢原作者开源贡献。

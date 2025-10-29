@@ -76,7 +76,7 @@ python ./read_dataset.py --data_dir '/path/to/UniMod1K/' --nlp_dir '/path/to/nlp
 ```
 
 ## Baselines Codes and pre-trained models
-For the usages of the baselines and the UniMod1K, please refer to the [README_SPT](./SPT/README.md). The training and test codes of the SPT, as well as the trained model are provided.
+For the usages of the baselines and the UniMod1K, please refer to the [SPT README](./SPT/README.md) 以及更细的 [Quick Start](./SPT/QUICK_START.md)。当前代码默认假设数据与预训练模型位于 `/root/autodl-tmp` 下，可按文档说明修改配置。
 
 ## Monocular Depth Estimation
 The subset for monocular depth estimation can be downloaded from [Baidu Cloud](https://pan.baidu.com/s/1ClHpwC1_BAN0GZSKT2jxaQ?pwd=l8um) or [Google Drive](https://drive.google.com/file/d/1aAokzgUssm26G_DHqKtF-FBzSErvpSrz/view?usp=drive_link).
