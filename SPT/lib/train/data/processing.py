@@ -147,8 +147,13 @@ class SPTProcessing(BaseProcessing):
             data["search_masks"] = torch.zeros((1, self.output_sz["search"], self.output_sz["search"]))
 
         # Process NLP  grounding_nl_token_ids, grounding_nl_token_masks
-        data['nl_token_ids'] = torch.tensor(data['nl_token_ids'])
-        data['nl_token_masks'] = torch.tensor(data['nl_token_masks'])
+        def _to_tensor_safe(x):
+            if torch.is_tensor(x):
+                return x.clone().detach()
+            return torch.as_tensor(x)
+
+        data['nl_token_ids'] = _to_tensor_safe(data['nl_token_ids'])
+        data['nl_token_masks'] = _to_tensor_safe(data['nl_token_masks'])
         if (data['nl_token_masks'] == 0).all():
             data['valid'] = False
             print('nl_token_masks is error')
