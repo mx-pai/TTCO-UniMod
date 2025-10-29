@@ -54,7 +54,7 @@ MODEL:
     VOCAB_PATH: '/root/autodl-tmp/bert/pretrained_models/bert-base-uncased-vocab.txt'
 TRAIN:
   BACKBONE_MULTIPLIER: 0.15
-  BATCH_SIZE: 16
+  BATCH_SIZE: 10
   DEEP_SUPERVISION: false
   EPOCH: 240
   FREEZE_BACKBONE_BN: true
