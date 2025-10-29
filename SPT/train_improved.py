@@ -64,6 +64,7 @@ def run_training_improved(args):
     settings = ws_settings.Settings()
     settings.script_name = 'spt'
     settings.config_name = args.config
+    settings.launch_cmd = f"{sys.executable} {' '.join(sys.argv)}"
 
     settings.local_rank = -1  # Single GPU mode
     settings.use_gpu = True
@@ -89,6 +90,7 @@ def run_training_improved(args):
 
     log_filename = f"{settings.script_name}-{settings.config_name}-{settings.run_name}.log"
     settings.log_file = os.path.join(settings.log_dir, log_filename)
+    snapshot_run(settings, cfg)
 
     print("\n" + "="*80)
     print("SPT IMPROVED TRAINING - Configuration")

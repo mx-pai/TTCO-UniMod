@@ -1,12 +1,18 @@
+import json
 import os
+import shutil
+import subprocess
 from datetime import datetime
+
 import torch
 from torch.utils.data.distributed import DistributedSampler
+
 # datasets related
 from lib.train.dataset import UniMod1K
 from lib.train.data import sampler, opencv_loader, processing, LTRLoader
 import lib.train.data.transforms as tfm
 from lib.utils.misc import is_main_process
+import yaml
 
 
 def configure_paths(settings, cfg):
@@ -87,6 +93,80 @@ def configure_paths(settings, cfg):
         env.unimod1k_dir = data_root
     if nlp_root is not None and hasattr(env, 'unimod1k_dir_nlp'):
         env.unimod1k_dir_nlp = nlp_root
+
+
+def _edict_to_dict(ed):
+    if isinstance(ed, dict):
+        return {k: _edict_to_dict(v) for k, v in ed.items()}
+    if isinstance(ed, (list, tuple)):
+        return [_edict_to_dict(v) for v in ed]
+    return ed
+
+
+def _collect_git_info():
+    info = {}
+    try:
+        commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], stderr=subprocess.DEVNULL).decode().strip()
+        info['git_commit'] = commit
+    except Exception:
+        info['git_commit'] = None
+    try:
+        branch = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+                                         stderr=subprocess.DEVNULL).decode().strip()
+        info['git_branch'] = branch
+    except Exception:
+        info['git_branch'] = None
+    return info
+
+
+def _collect_git_status():
+    try:
+        status = subprocess.check_output(['git', 'status', '--short'],
+                                         stderr=subprocess.DEVNULL).decode().strip()
+        return status
+    except Exception:
+        return None
+
+
+def snapshot_run(settings, cfg, extra_meta=None):
+    run_root = settings.paths.get('run_root', settings.save_dir)
+    metadata_dir = os.path.join(run_root, 'metadata')
+    os.makedirs(metadata_dir, exist_ok=True)
+
+    # raw config
+    cfg_src = getattr(settings, 'cfg_file', None)
+    if cfg_src and os.path.exists(cfg_src):
+        shutil.copy2(cfg_src, os.path.join(metadata_dir, 'config_raw.yaml'))
+
+    # resolved config
+    cfg_dict = _edict_to_dict(cfg)
+    resolved_path = os.path.join(metadata_dir, 'config_resolved.yaml')
+    with open(resolved_path, 'w') as f:
+        yaml.safe_dump(cfg_dict, f, sort_keys=False, allow_unicode=True)
+
+    meta = {
+        'run_name': settings.run_name,
+        'script_name': settings.script_name,
+        'config_name': settings.config_name,
+        'timestamp': datetime.now().isoformat(),
+        'run_root': run_root,
+        'checkpoint_dir': settings.checkpoint_dir,
+        'tensorboard_dir': settings.tensorboard_dir,
+        'log_file': getattr(settings, 'log_file', None),
+        'launch_cmd': getattr(settings, 'launch_cmd', None),
+    }
+    if extra_meta:
+        meta.update(extra_meta)
+    meta.update(_collect_git_info())
+
+    meta_path = os.path.join(metadata_dir, 'run_meta.json')
+    with open(meta_path, 'w') as f:
+        json.dump(meta, f, indent=2, ensure_ascii=False)
+
+    status = _collect_git_status()
+    if status:
+        with open(os.path.join(metadata_dir, 'git_status.txt'), 'w') as f:
+            f.write(status + '\n')
 
 
 def update_settings(settings, cfg):

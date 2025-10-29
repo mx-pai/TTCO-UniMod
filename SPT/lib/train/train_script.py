@@ -42,6 +42,8 @@ def run(settings):
         os.makedirs(log_dir, exist_ok=True)
     log_filename = "%s-%s-%s.log" % (settings.script_name, settings.config_name, settings.run_name)
     settings.log_file = os.path.join(log_dir, log_filename)
+    if settings.local_rank in [-1, 0]:
+        snapshot_run(settings, cfg)
 
     # Build dataloaders
     loader_train = build_dataloaders(cfg, settings)
