@@ -22,7 +22,9 @@ from torch.nn.functional import l1_loss
 from lib.models.spt import build_spt
 from lib.train.actors import SPTActor
 from lib.train.trainers import LTRTrainer
-from lib.train.base_functions import configure_paths, update_settings, build_dataloaders, get_optimizer_scheduler
+from lib.train.base_functions import (configure_paths, update_settings,
+                                      build_dataloaders, get_optimizer_scheduler,
+                                      snapshot_run)
 import lib.train.admin.settings as ws_settings
 
 
