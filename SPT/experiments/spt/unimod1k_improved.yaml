@@ -28,7 +28,7 @@ DATA:
     LONG_SEQ_LENGTH: 4
 
 MODEL:
-  PRETRAINED: '/path/to/pretrained_models/STARKS_ep0500.pth.tar'
+  PRETRAINED: '/root/autodl-tmp/STARKS_ep0500.pth.tar'
   BACKBONE:
     DILATION: false
     OUTPUT_LAYERS:
@@ -50,8 +50,8 @@ MODEL:
   LANGUAGE:
     IMPLEMENT: 'pytorch'
     TYPE: 'bert-base-uncased'
-    PATH: '/path/to/pretrained_models/bert-base-uncased.tar.gz'
-    VOCAB_PATH: '/path/to/pretrained_models/bert-base-uncased-vocab.txt'
+    PATH: '/root/autodl-tmp/bert/bert-base-uncased.tar.gz'
+    VOCAB_PATH: '/root/autodl-tmp/bert/bert-base-uncased-vocab.txt'
 TRAIN:
   BACKBONE_MULTIPLIER: 0.15
   BATCH_SIZE: 16
@@ -85,9 +85,9 @@ TEST:
   TEMPLATE_SIZE: 128
   LANG_THRESHOLD: 0.3
 PATHS:
-  OUTPUT_DIR: './outputs'
-  CHECKPOINT_DIR: './outputs/checkpoints'
-  TENSORBOARD_DIR: './outputs/tensorboard'
-  PRETRAINED_DIR: './pretrained_models'
-  DATA_ROOT: '/path/to/UniMod1K'
-  NLP_ROOT: '/path/to/nlps'
+  OUTPUT_DIR: '/root/autodl-tmp/spt_runs'
+  CHECKPOINT_DIR: '/root/autodl-tmp/spt_runs/checkpoints'
+  TENSORBOARD_DIR: '/root/autodl-tmp/spt_runs/tensorboard'
+  PRETRAINED_DIR: '/root/autodl-tmp'
+  DATA_ROOT: '/root/autodl-tmp/1-训练验证集/TrainSet'
+  NLP_ROOT: '/root/autodl-tmp/1-训练验证集/TrainSet'
