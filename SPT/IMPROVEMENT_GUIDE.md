@@ -25,9 +25,9 @@ python tracking/test.py --tracker_name spt --tracker_param unimod1k --dataset_na
 ---
 
 ### 🚀 优先级2：训练策略改进（新增长序列训练）
-**新增文件**:
+**关键文件**:
 - `lib/train/data/sampler_longseq.py`: 长序列采样器（3-5连续帧）
-- `lib/train/actors/spt_longseq.py`: 长序列训练Actor（累积loss）
+- `lib/train/base_functions.py`: 已内置长序列/短序列混合采样
 - `experiments/spt/unimod1k_improved.yaml`: 改进版配置文件
 
 **改进内容**:
@@ -47,11 +47,9 @@ python tracking/test.py --tracker_name spt --tracker_param unimod1k --dataset_na
    - GIoU: 2.0 → 2.5
    - L1: 5.0 → 4.0
 
-**使用方法**（暂未集成到主训练流程，需手动修改）:
+**使用方法**:
 1. 将 `unimod1k_improved.yaml` 中的路径更新为你的实际路径
-2. 修改 `lib/train/base_functions.py` 的 `build_dataloaders` 函数，添加长序列采样器
-3. 修改 `lib/train/actors/__init__.py`，导入 `SPTLongSeqActor`
-4. 在训练脚本中随机选择使用 `SPTActor` 或 `SPTLongSeqActor`
+2. 直接运行 `train_improved.py` 或 `lib/train/run_training.py`，长序列混合策略已默认启用
 
 **预期效果**:
 - 训练IoU从0.8提升到0.85+

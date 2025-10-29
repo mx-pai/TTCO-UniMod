@@ -247,11 +247,11 @@ UniMod1K/SPT/
 │   └── unimod1k_improved.yaml      # 改进版配置（新）
 │
 ├── lib/train/
-│   ├── base_functions_improved.py  # 混合采样数据加载（新）
+│   ├── base_functions.py           # 数据加载与路径配置
 │   ├── data/
 │   │   └── sampler_longseq.py      # 长序列采样器（新）
 │   └── actors/
-│       └── spt_longseq.py          # 长序列Actor（新）
+│       └── spt.py                  # 训练actor（含长序列逻辑）
 │
 ├── lib/test/tracker/
 │   └── spt.py                      # 修复后的tracker（已修改）
