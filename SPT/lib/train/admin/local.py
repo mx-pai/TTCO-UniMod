@@ -16,7 +16,7 @@ class EnvironmentSettings(EnvSettings):
         self.unimod1k_dir_nlp = '/root/autodl-tmp/data/1-训练验证集/TrainSet'
 
         # Default save dir for evaluation/test scripts ---------------------
-        self.prj_dir = '/root/autodl-tmp/TTCo-UniMod/SPT'
+        self.prj_dir = '/root/autodl-tmp/TTCO-UniMod/SPT'
         self.save_dir = self.workspace_dir
         self.results_path = f"{self.workspace_dir}/lib/test/tracking_results"
         self.segmentation_path = f"{self.workspace_dir}/lib/test/segmentation_results"
