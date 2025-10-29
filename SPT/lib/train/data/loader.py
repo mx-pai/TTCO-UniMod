@@ -82,7 +82,21 @@ def ltr_collate_stack1(batch):
             numel = sum([x.numel() for x in batch])
             storage = batch[0].storage()._new_shared(numel)
             out = batch[0].new(storage)
-        return torch.stack(batch, 1, out=out)
+        try:
+            return torch.stack(batch, 1, out=out)
+        except RuntimeError:
+            # Pad tensors along first dimension to the maximum length
+            max_shape = list(batch[0].shape)
+            max_shape[0] = max(t.shape[0] for t in batch)
+            padded_batch = []
+            for tensor in batch:
+                if tensor.shape[0] == max_shape[0]:
+                    padded_batch.append(tensor)
+                else:
+                    padded = tensor.new_zeros(max_shape)
+                    padded[:tensor.shape[0]] = tensor
+                    padded_batch.append(padded)
+            return torch.stack(padded_batch, 1)
         # if batch[0].dim() < 4:
         #     return torch.stack(batch, 0, out=out)
         # return torch.cat(batch, 0, out=out)
