@@ -86,15 +86,19 @@ def ltr_collate_stack1(batch):
             return torch.stack(batch, 1, out=out)
         except RuntimeError:
             max_len = max(t.shape[0] for t in batch)
-            padded_batch = []
+            aligned = []
             for tensor in batch:
                 if tensor.shape[0] == max_len:
-                    padded_batch.append(tensor)
+                    aligned.append(tensor)
                 else:
-                    padded = tensor.new_zeros((max_len,) + tensor.shape[1:])
+                    pad_shape = (max_len,) + tensor.shape[1:]
+                    padded = tensor.new_empty(pad_shape)
                     padded[:tensor.shape[0]] = tensor
-                    padded_batch.append(padded)
-            return torch.stack(padded_batch, 1)
+                    last = tensor[-1]
+                    for idx in range(tensor.shape[0], max_len):
+                        padded[idx] = last
+                    aligned.append(padded)
+            return torch.stack(aligned, 1)
         # if batch[0].dim() < 4:
         #     return torch.stack(batch, 0, out=out)
         # return torch.cat(batch, 0, out=out)
