@@ -1,314 +1,117 @@
-# 🚀 SPT 改进版训练 - 快速开始指南
+# 🚀 SPT 训练快速指南
 
-> **说明**：目前 `experiments/spt/unimod1k_improved.yaml` 的内容已与默认 `unimod1k.yaml` 保持一致，仅作为旧脚本的配置别名存在。若没有特殊需求，直接使用默认配置即可。
-
-## 📋 一键启动（推荐）
-
-### 最简单的方式
-```bash
-cd /root/autodl-tmp/UniMod1K/SPT
-
-# 给脚本执行权限
-chmod +x launch_training.sh
-
-# 一键启动（自动检查环境+训练）
-bash launch_training.sh
-```
-
-### 高级选项
-```bash
-# 指定配置文件
-bash launch_training.sh --config unimod1k_improved
-
-# 启用自动评测（在epoch 40/80/120/160/200/240自动评测）
-bash launch_training.sh --auto-eval
-
-# 指定保存目录
-bash launch_training.sh --save-dir ./my_checkpoints
-
-# 保留最近10个checkpoint（默认5个）
-bash launch_training.sh --keep-ckpt 10
-
-# 组合使用
-bash launch_training.sh --config unimod1k_improved --auto-eval --keep-ckpt 10
-```
+> 当前仓库默认推荐直接使用 `experiments/spt/unimod1k.yaml`。若无需特殊调参，不需要额外配置。
 
 ---
 
-## 🔧 手动启动（更灵活）
+## 1️⃣ 准备环境与路径
 
-### 步骤1: 准备环境
 ```bash
 cd /root/autodl-tmp/UniMod1K/SPT
 export PYTHONPATH=$(pwd):$PYTHONPATH
 ```
 
-### 步骤2: 更新配置文件路径
-编辑 `experiments/spt/unimod1k_improved.yaml`，更新这3个路径：
+确认 `experiments/spt/unimod1k.yaml`（或 `unimod1k_improved.yaml`）里以下路径指向服务器实际位置：
+
 ```yaml
 MODEL:
-  PRETRAINED: '/root/autodl-tmp/STARKS_ep0500.pth.tar'  # 你的STARK-S预训练权重
+  PRETRAINED: '/root/autodl-tmp/STARKS_ep0500.pth.tar'
   LANGUAGE:
-    PATH: '/root/autodl-tmp/bert/bert-base-uncased.tar.gz'  # BERT模型
-    VOCAB_PATH: '/root/autodl-tmp/bert/bert-base-uncased-vocab.txt'  # BERT词表
-```
+    PATH: '/root/autodl-tmp/bert/bert-base-uncased.tar.gz'
+    VOCAB_PATH: '/root/autodl-tmp/bert/bert-base-uncased-vocab.txt'
 
-### 步骤3: 启动训练
-```bash
-# 基础版（使用改进配置）
-python train_improved.py --config unimod1k_improved --save_dir ./checkpoints_improved
-
-# 启用自动评测
-python train_improved.py --config unimod1k_improved --save_dir ./checkpoints_improved --auto_eval
-
-# 从checkpoint恢复
-python train_improved.py --config unimod1k_improved --resume ./checkpoints_improved/SPT_ep0080.pth.tar
+PATHS:
+  DATA_ROOT: '/root/autodl-tmp/data/1-训练验证集/TrainSet'
+  NLP_ROOT:  '/root/autodl-tmp/data/1-训练验证集/TrainSet'
+  OUTPUT_DIR: '/root/autodl-tmp/spt_runs'
 ```
 
 ---
 
-## 📊 训练监控
+## 2️⃣ 启动训练
 
-### 查看训练日志
+### 标准脚本（保持与原论文一致）
 ```bash
-# 实时查看最新日志
-tail -f logs/training_unimod1k_improved_*.log
-
-# 查看loss和IoU变化
-grep "Loss/total" logs/training_*.log | tail -20
-grep "IoU:" logs/training_*.log | tail -20
+python3 lib/train/run_training.py \
+  --config unimod1k \
+  --run_name baseline_$(date +%m%d_%H%M)
 ```
 
-### TensorBoard可视化（如果配置了）
+### 改进脚本（含长序列采样等增强）
 ```bash
-tensorboard --logdir tensorboard --port 6006
+python3 train_improved.py \
+  --config unimod1k_improved \
+  --run_name improved_$(date +%m%d_%H%M)
 ```
 
-### GPU监控
+参数说明：
+- `--run_name`：可选，默认为时间戳。用于区分不同实验目录。
+- `--output_root`：可覆盖 `PATHS.OUTPUT_DIR`，按需将输出写到其他磁盘。
+
+运行后会自动生成目录：  
+`/root/autodl-tmp/spt_runs/<config>/<run_name>/`  
+其中包含 `checkpoints/`, `logs/`, `tensorboard/`, `metadata/` 等子目录，并记录配置快照与 git 信息。
+
+---
+
+## 3️⃣ 监控训练
+
 ```bash
-# 实时监控GPU使用
+# 查看最新日志
+tail -f /root/autodl-tmp/spt_runs/<config>/<run_name>/logs/*.log
+
+# 查看 Loss / IoU
+grep "Loss/total" /root/autodl-tmp/spt_runs/<config>/<run_name>/logs/*.log | tail
+grep "IoU"        /root/autodl-tmp/spt_runs/<config>/<run_name>/logs/*.log | tail
+
+# TensorBoard（如需）
+tensorboard --logdir /root/autodl-tmp/spt_runs/<config>/<run_name>/tensorboard --port 6006
+
+# GPU 监控
 watch -n 1 nvidia-smi
-
-# 或者用更友好的工具
-gpustat -i 1
 ```
 
 ---
 
-## 🧪 测试训练好的模型
+## 4️⃣ 评测模型
 
-### 快速测试单个checkpoint
+1. 在配置文件中设置 `TEST.EPOCH` 为想要测试的 checkpoint 编号。  
+2. 执行：
+   ```bash
+   python3 tracking/test.py \
+     --tracker_name spt \
+     --tracker_param unimod1k \
+     --dataset_name unimod1k \
+     --runid 1 \
+     --threads 0 \
+     --num_gpus 1
+   ```
+3. 结果位于 `lib/test/tracking_results/spt/<tracker_param>_001/`。
+
+---
+
+## 5️⃣ 清理旧实验
+
+使用 `auto_clean.py` 可快速删除旧的 run，避免磁盘占满：
+
 ```bash
-# 1. 更新配置中的TEST.EPOCH
-# 在 experiments/spt/unimod1k_improved.yaml 中设置:
-# TEST:
-#   EPOCH: 120  # 你想测试的epoch
-
-# 2. 运行测试
-python tracking/test.py \
-  --tracker_name spt \
-  --tracker_param unimod1k_improved \
-  --dataset_name unimod1k \
-  --runid 1 \
-  --threads 0 \
-  --num_gpus 1
-
-# 3. 查看结果
-ls lib/test/tracking_results/spt/unimod1k_improved_001/rgbd-unsupervised/
+python3 auto_clean.py \
+  --root /root/autodl-tmp/spt_runs \
+  --keep 3 \
+  --force
 ```
 
-### 自动评测多个checkpoint
-```bash
-# 评测epoch 80的checkpoint
-python auto_evaluate.py --checkpoint_epoch 80 --config unimod1k_improved --save_results
-
-# 评测epoch 120的checkpoint
-python auto_evaluate.py --checkpoint_epoch 120 --config unimod1k_improved --save_results
-
-# 查看评测历史
-cat eval_history.json
-```
+选项说明：
+- `--config unimod1k_improved`：仅清理指定配置的 run。
+- `--keep`：保留最新 N 个 run。
+- 默认会先打印计划，只有加上 `--force` 才会真正删除。
 
 ---
 
-## 📈 预期训练效果
+## ✅ 常见问题排查
 
-### 训练指标目标
-| Epoch | Loss/total | Loss/giou | IoU | 说明 |
-|-------|-----------|-----------|-----|------|
-| 0-20  | 0.8-1.0   | 0.35-0.45 | 0.65-0.70 | 初期快速下降 |
-| 20-80 | 0.4-0.6   | 0.20-0.30 | 0.75-0.80 | 稳定学习 |
-| **80** | **LR下降** | **继续下降** | **0.80-0.82** | **第一个里程碑** |
-| 80-120 | 0.3-0.4  | 0.15-0.20 | 0.82-0.85 | 精细调整 |
-| **120** | **LR下降** | **继续下降** | **0.85+** | **第二个里程碑** |
-| 120-240 | 0.25-0.35 | 0.12-0.18 | 0.85-0.88 | 收敛 |
+- **训练未写出日志或 checkpoint**：检查 `PATHS.OUTPUT_DIR` 与命令行参数，确认目标磁盘存在且可写。
+- **找不到预训练模型或 BERT**：确保路径与文件名准确无误，并具有读取权限。
+- **评测结果缺失**：确认 `TEST.EPOCH` 与实际存在的 checkpoint 编号一致。
 
-### 对比原版训练
-- **原版**: Loss卡在0.3，IoU停在0.80，80轮后不再下降
-- **改进版**: Loss持续下降到0.25，IoU达到0.85+，80轮后仍在优化
-
-### 测试效果对比
-- **原版**: 框容易"歪"，快速移动时丢失目标
-- **改进版**: 框更稳定，抗漂移能力强，长序列跟踪准确
-
----
-
-## ⚙️ 配置文件对比
-
-### 原版 vs 改进版关键差异
-
-| 参数 | 原版 (unimod1k.yaml) | 改进版 (unimod1k_improved.yaml) | 说明 |
-|------|---------------------|--------------------------------|------|
-| **TRAIN.LR** | 1e-5 | 2e-5 | 更快收敛 |
-| **TRAIN.BACKBONE_MULTIPLIER** | 0.1 | 0.15 | Backbone学得更快 |
-| **TRAIN.SCHEDULER.TYPE** | step | Mstep | 多阶段调整 |
-| **TRAIN.SCHEDULER.MILESTONES** | - | [80,120,160,200] | 里程碑优化 |
-| **TRAIN.GIOU_WEIGHT** | 2.0 | 2.5 | 更重视IoU |
-| **TRAIN.L1_WEIGHT** | 5.0 | 4.0 | 平衡权重 |
-| **TRAIN.WEIGHT_DECAY** | 1e-4 | 2e-4 | 更强正则化 |
-| **DATA.SEARCH.CENTER_JITTER** | 4.5 | 5.5 | 更强增广 |
-| **DATA.TEMPLATE.CENTER_JITTER** | 0 | 1.0 | Template也增广 |
-| **DATA.TRAIN.LONG_SEQ_RATIO** | - | 0.3 | 30%长序列训练 |
-| **DATA.TRAIN.LONG_SEQ_LENGTH** | - | 4 | 4连续帧 |
-
----
-
-## 🐛 常见问题排查
-
-### Q1: 训练时显示 "No module named 'lib'"
-**解决**:
-```bash
-export PYTHONPATH=$(pwd):$PYTHONPATH
-```
-或使用一键启动脚本（自动设置）。
-
-### Q2: CUDA Out of Memory
-**解决**:
-```yaml
-# 在 unimod1k_improved.yaml 中降低batch size
-TRAIN:
-  BATCH_SIZE: 12  # 从16降到12
-```
-
-### Q3: 找不到预训练权重
-**解决**:
-```bash
-# 检查文件是否存在
-ls /root/autodl-tmp/STARKS_ep0500.pth.tar
-ls /root/autodl-tmp/bert/bert-base-uncased.tar.gz
-
-# 更新配置文件中的路径
-vim experiments/spt/unimod1k_improved.yaml
-```
-
-### Q4: 训练Loss震荡
-**解决**:
-```yaml
-# 降低学习率
-TRAIN:
-  LR: 0.00001  # 从2e-5降到1e-5
-
-# 或增加梯度裁剪
-TRAIN:
-  GRAD_CLIP_NORM: 0.2  # 从0.1增加到0.2
-```
-
-### Q5: 长序列训练太慢
-**解决**:
-```yaml
-# 降低长序列比例
-DATA:
-  TRAIN:
-    LONG_SEQ_RATIO: 0.2  # 从0.3降到0.2
-    LONG_SEQ_LENGTH: 3   # 从4降到3
-```
-
-### Q6: 测试时仍然"框很歪"
-**检查清单**:
-1. 确认使用了修复后的 `lib/test/tracker/spt.py`
-2. 确认训练IoU真的达到了0.85+
-3. 尝试降低 `TEST.SEARCH_FACTOR` 从5.0到4.5
-4. 确认用的是长序列训练的checkpoint
-
----
-
-## 📂 文件结构
-
-```
-UniMod1K/SPT/
-├── train_improved.py                # 主训练脚本（新）
-├── auto_evaluate.py                 # 自动评测脚本（新）
-├── launch_training.sh               # 一键启动脚本（新）
-├── QUICK_START.md                   # 本文档（新）
-├── IMPROVEMENT_GUIDE.md             # 详细改进指南（新）
-│
-├── experiments/spt/
-│   ├── unimod1k.yaml               # 原版配置
-│   └── unimod1k_improved.yaml      # 改进版配置（新）
-│
-├── lib/train/
-│   ├── base_functions.py           # 数据加载与路径配置
-│   ├── data/
-│   │   └── sampler_longseq.py      # 长序列采样器（新）
-│   └── actors/
-│       └── spt.py                  # 训练actor（含长序列逻辑）
-│
-├── lib/test/tracker/
-│   └── spt.py                      # 修复后的tracker（已修改）
-│
-└── lib/test/evaluation/
-    └── running.py                  # 修复后的保存逻辑（已修改）
-```
-
----
-
-## 🎯 推荐训练流程
-
-### 新手推荐（保守）
-```bash
-# 1. 先用原版配置训练40轮，确认环境OK
-bash launch_training.sh --config unimod1k --keep-ckpt 3
-
-# 2. 再用改进版配置从头训练
-bash launch_training.sh --config unimod1k_improved --auto-eval --keep-ckpt 5
-```
-
-### 老手推荐（激进）
-```bash
-# 直接用改进版配置+自动评测，一步到位
-bash launch_training.sh --config unimod1k_improved --auto-eval --keep-ckpt 10
-```
-
-### 资源受限（省显存/磁盘）
-```bash
-# 修改配置: BATCH_SIZE=12, LONG_SEQ_RATIO=0.2
-# 然后启动
-bash launch_training.sh --config unimod1k_improved --keep-ckpt 3
-```
-
----
-
-## 📞 获取帮助
-
-如果遇到问题，请检查：
-1. **训练日志**: `logs/training_*.log`
-2. **改进指南**: `IMPROVEMENT_GUIDE.md`（详细技术说明）
-3. **配置文件**: `experiments/spt/unimod1k_improved.yaml`（确认路径正确）
-4. **环境检查**: `bash launch_training.sh`会自动检查并报告问题
-
----
-
-## ✅ 成功标志
-
-训练成功的标志：
-- ✅ 日志中能看到 `Loss/total` 持续下降
-- ✅ `IoU` 在80轮后仍在上升（不停滞）
-- ✅ Checkpoint文件正常保存到 `checkpoints_improved/`
-- ✅ 测试时框不再"歪"，能跟上快速移动
-
-预计训练时间（单卡4090）：
-- 每epoch约10-15分钟（含长序列）
-- 总共240epoch ≈ 40-60小时
-- 建议在epoch 80/120/160暂停评测，选最优继续
-
-祝训练顺利！🎉
+如需调整训练策略（长序列比例、学习率等），可直接修改对应 YAML 中的参数，然后按上述流程重新启动即可。
