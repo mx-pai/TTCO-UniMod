@@ -195,7 +195,10 @@ def main():
     print("SPT IMPROVED TRAINING SYSTEM")
     print("="*80)
     print(f"Config: {args.config}")
-    print(f"Save directory: {args.save_dir}")
+    output_root_msg = args.output_root if args.output_root else "(use PATHS.OUTPUT_DIR)"
+    run_name_msg = args.run_name if args.run_name else "(auto timestamp)"
+    print(f"Output root: {output_root_msg}")
+    print(f"Run name: {run_name_msg}")
     print(f"Auto evaluation: {args.auto_eval}")
     if args.auto_eval:
         print(f"Eval epochs: {args.eval_epochs}")
