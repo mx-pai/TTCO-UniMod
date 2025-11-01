@@ -54,7 +54,7 @@ MODEL:
     VOCAB_PATH: '/root/autodl-tmp/pretrained_models/bert/bert-base-uncased-vocab.txt'
 TRAIN:
   BACKBONE_MULTIPLIER: 0.15
-  BATCH_SIZE: 10
+  BATCH_SIZE: 16
   DEEP_SUPERVISION: false
   EPOCH: 240
   FREEZE_BACKBONE_BN: true
@@ -80,21 +80,21 @@ TRAIN:
   AUG:
     COLOR_JITTER:
       ENABLED: true
-      BRIGHTNESS: 0.2
-      CONTRAST: 0.2
-      SATURATION: 0.2
-      HUE: 0.02
-      PROBABILITY: 0.8
+      BRIGHTNESS: 0.3
+      CONTRAST: 0.3
+      SATURATION: 0.3
+      HUE: 0.05
+      PROBABILITY: 0.9
     GAUSSIAN_BLUR:
       ENABLED: true
-      KERNEL_SIZE: 3
-      SIGMA: [0.1, 2.0]
-      PROBABILITY: 0.1
+      KERNEL_SIZE: 5
+      SIGMA: [0.1, 2.5]
+      PROBABILITY: 0.15
     RANDOM_ERASE:
       ENABLED: true
-      PROBABILITY: 0.2
-      SCALE: [0.02, 0.33]
-      RATIO: [0.3, 3.3]
+      PROBABILITY: 0.25
+      SCALE: [0.02, 0.4]
+      RATIO: [0.3, 3.5]
 TEST:
   EPOCH: 240
   SEARCH_FACTOR: 5.0
