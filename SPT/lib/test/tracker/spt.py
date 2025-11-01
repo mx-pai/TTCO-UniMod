@@ -15,7 +15,13 @@ class SPT(BaseTracker):
     def __init__(self, params, dataset_name):
         super(SPT, self).__init__(params)
         network = build_spt(params.cfg)
-        network.load_state_dict(torch.load(self.params.checkpoint, map_location='cpu')['net'], strict=True)
+        checkpoint = torch.load(self.params.checkpoint, map_location='cpu')
+        state_dict = checkpoint['net']
+        missing_keys, unexpected_keys = network.load_state_dict(state_dict, strict=False)
+        if missing_keys:
+            print(f"[Warning] Missing keys when loading checkpoint: {missing_keys}")
+        if unexpected_keys:
+            print(f"[Warning] Unexpected keys when loading checkpoint: {unexpected_keys}")
         self.cfg = params.cfg
         self.network = network.cuda()
         print('loading the trained SPT done!'+ self.params.checkpoint)
