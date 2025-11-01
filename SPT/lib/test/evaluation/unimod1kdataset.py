@@ -24,6 +24,9 @@ class UniMod1KDataset(BaseDataset):
         except:
             ground_truth_rect = np.loadtxt(str(anno_path), delimiter=',', dtype=np.float64)
 
+        if ground_truth_rect.ndim == 1:
+            ground_truth_rect = ground_truth_rect[None, :]
+
         nlp_path = '{}/{}/nlp.txt'.format(self.base_path, sequence_name)
         nlp_label = load_text(str(nlp_path), delimiter=',', dtype=str)
         nlp_label = str(nlp_label)
