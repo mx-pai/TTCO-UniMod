@@ -1,8 +1,9 @@
-import os.path
-
+import os
 import numpy as np
 from lib.test.evaluation.data import Sequence, BaseDataset, SequenceList
 from lib.test.utils.load_text import load_text
+from glob import glob
+import cv2
 
 class UniMod1KDataset(BaseDataset):
     def __init__(self):
@@ -16,47 +17,42 @@ class UniMod1KDataset(BaseDataset):
     def _construct_sequence(self, sequence_name):
         sequence_path = sequence_name
         nz = 8
-        start_frame = 1
 
-        anno_path = '{}/{}/groundtruth.txt'.format(self.base_path, sequence_name)
+        # 1️⃣ 读取 groundtruth.txt（只第一帧）
+        anno_path = os.path.join(self.base_path, sequence_name, 'groundtruth.txt')
         try:
-            ground_truth_rect = np.loadtxt(str(anno_path), dtype=np.float64)
+            gt = np.loadtxt(anno_path, dtype=np.float64)
         except:
-            ground_truth_rect = np.loadtxt(str(anno_path), delimiter=',', dtype=np.float64)
+            gt = np.loadtxt(anno_path, delimiter=',', dtype=np.float64)
 
-        if ground_truth_rect.ndim == 1:
-            ground_truth_rect = ground_truth_rect[None, :]
+        gt = np.array(gt, dtype=np.float64).reshape(1, 4)  # 只保留第一帧矩形框
 
-        nlp_path = '{}/{}/nlp.txt'.format(self.base_path, sequence_name)
-        nlp_label = load_text(str(nlp_path), delimiter=',', dtype=str)
-        nlp_label = str(nlp_label)
+        # 2️⃣ NLP 文本
+        nlp_path = os.path.join(self.base_path, sequence_name, 'nlp.txt')
+        nlp_label = ""
+        if os.path.exists(nlp_path):
+            nlp_label = load_text(str(nlp_path), delimiter=',', dtype=str)
+            nlp_label = str(nlp_label)
 
-        end_frame = ground_truth_rect.shape[0]
+        # 3️⃣ 根据 color 文件夹中的帧数决定视频长度
+        color_dir = os.path.join(self.base_path, sequence_name, 'color')
+        depth_dir = os.path.join(self.base_path, sequence_name, 'depth')
+        color_imgs = sorted(glob(os.path.join(color_dir, '*.png')))
+        depth_imgs = sorted(glob(os.path.join(depth_dir, '*.png')))
 
-        depth_frames = ['{base_path}/{sequence_path}/depth/{frame:0{nz}}.png'.format(base_path=self.base_path,
-                        sequence_path=sequence_path, frame=frame_num, nz=nz)
-                        for frame_num in range(start_frame, end_frame+1)]
-        color_frames = ['{base_path}/{sequence_path}/color/{frame:0{nz}}.jpg'.format(base_path=self.base_path,
-                        sequence_path=sequence_path, frame=frame_num, nz=nz)
-                        for frame_num in range(start_frame, end_frame+1)]
+        num_frames = min(len(color_imgs), len(depth_imgs))
+        if num_frames == 0:
+            raise RuntimeError(f"No frames found in {sequence_name}")
 
+        # 4️⃣ 构造帧列表（从第 1 帧开始）
         frames = []
-        for c_path, d_path in zip(color_frames, depth_frames):
+        for i in range(num_frames):
+            c_path = os.path.join(color_dir, f"{i+1:0{nz}}.png")
+            d_path = os.path.join(depth_dir, f"{i+1:0{nz}}.png")
             frames.append({'color': c_path, 'depth': d_path})
 
-        # Convert gt
-        if ground_truth_rect.shape[1] > 4:
-            gt_x_all = ground_truth_rect[:, [0, 2, 4, 6]]
-            gt_y_all = ground_truth_rect[:, [1, 3, 5, 7]]
-
-            x1 = np.amin(gt_x_all, 1).reshape(-1,1)
-            y1 = np.amin(gt_y_all, 1).reshape(-1,1)
-            x2 = np.amax(gt_x_all, 1).reshape(-1,1)
-            y2 = np.amax(gt_y_all, 1).reshape(-1,1)
-
-            ground_truth_rect = np.concatenate((x1, y1, x2-x1, y2-y1), 1)
-
-        return Sequence(sequence_name, frames, 'unimod1k', ground_truth_rect, language_query=nlp_label)
+        # 5️⃣ 直接返回 Sequence（只用第一帧 GT 初始化）
+        return Sequence(sequence_name, frames, 'unimod1k', gt, language_query=nlp_label)
 
     def __len__(self):
         return len(self.sequence_list)

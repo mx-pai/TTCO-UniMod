@@ -22,8 +22,8 @@ def parameters(yaml_name: str):
     params.lang_threshold = getattr(cfg.TEST, 'LANG_THRESHOLD', 0.3)
 
     # Network checkpoint path
-    params.checkpoint = os.path.join(save_dir, "checkpoints/train/spt/%s/SPT_ep%04d.pth.tar" %
-                                     (yaml_name, cfg.TEST.EPOCH))
+    params.checkpoint = os.path.join(save_dir, "/root/autodl-tmp/TTCO-UniMod/model/SPT_ep%04d.pth.tar" %
+                                     cfg.TEST.EPOCH)
 
     # whether to save boxes from all queries
     params.save_all_boxes = False
