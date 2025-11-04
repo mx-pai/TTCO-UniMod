@@ -51,7 +51,7 @@ MODEL:
     IMPLEMENT: 'pytorch'
     TYPE: 'bert-base-uncased'
     PATH: '/root/autodl-tmp/pretrained_models/bert/bert-base-uncased.tar.gz'
-    VOCAB_PATH: '/root/autodl-tmp/bert/pretrained_models/bert-base-uncased-vocab.txt'
+    VOCAB_PATH: '/root/autodl-tmp/pretrained_models/bert/bert-base-uncased-vocab.txt'
 TRAIN:
   BACKBONE_MULTIPLIER: 0.15
   BATCH_SIZE: 10
