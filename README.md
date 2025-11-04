@@ -76,9 +76,46 @@ python ./read_dataset.py --data_dir '/path/to/UniMod1K/' --nlp_dir '/path/to/nlp
 ```
 
 ## Baselines Codes and pre-trained models
-For the usages of the baselines and the UniMod1K, please refer to the [SPT README](./SPT/README.md) 以及更细的 [Quick Start](./SPT/QUICK_START.md)。当前代码默认假设数据与预训练模型位于 `/root/autodl-tmp` 下，可按文档说明修改配置。
+完整的跟踪器代码位于 `SPT/` 目录，核心结构如下：
 
-> **Source**: 本仓库基于原始 UniMod1K 论文的公开实现（示例参考 [UniMod1K 官方仓库](https://github.com/xuefeng-zhu5/UniMod1K)）。我们在此基础上按照比赛需求进行了二次调整。
+```
+UniMod1K/
+├── README.md
+├── read_dataset.py
+├── data_samples.jpg
+└── SPT/
+    ├── README.md              # 训练/测试说明
+    ├── QUICK_START.md         # 快速上手指南
+    ├── experiments/spt/*.yaml # 训练&测试配置
+    ├── lib/                   # 模型、训练、测试源码
+    ├── tracking/              # 测试入口脚本
+    ├── train_improved.py      # 改进版训练脚本
+    └── auto_clean.py          # 结果清理工具
+```
+
+简单使用流程：
+1. 在 `SPT/lib/train/admin/local.py`、`SPT/lib/test/evaluation/local.py` 中写入各自的路径（workspace、数据集、网络、结果目录等）。
+2. 训练模型
+   ```bash
+   cd SPT
+   export PYTHONPATH=$(pwd):$PYTHONPATH
+   python3 train_improved.py --config unimod1k_improved --run_name run_$(date +%m%d_%H%M)
+   ```
+3. 测试模型
+   ```bash
+   python3 tracking/test.py \
+     --tracker_name spt \
+     --tracker_param unimod1k \
+     --dataset_name unimod1k \
+     --runid 1 \
+     --threads 0 \
+     --num_gpus 1
+   ```
+   输出默认写到 `SPT/test/tracking_results`（可在 `local.py` 中调整）。
+
+更详细说明请参阅 [SPT README](./SPT/README.md) 和 [Quick Start](./SPT/QUICK_START.md)。当前示例默认假设数据与预训练模型位于 `/root/autodl-tmp` 下，可根据实际环境修改。
+
+> **Source**: 本仓库基于原始 UniMod1K 论文的公开实现（参考 [UniMod1K 官方仓库](https://github.com/xuefeng-zhu5/UniMod1K)）。本版本针对比赛需求做了工程化改造与长序列训练等增强。
 
 ## Monocular Depth Estimation
 The subset for monocular depth estimation can be downloaded from [Baidu Cloud](https://pan.baidu.com/s/1ClHpwC1_BAN0GZSKT2jxaQ?pwd=l8um) or [Google Drive](https://drive.google.com/file/d/1aAokzgUssm26G_DHqKtF-FBzSErvpSrz/view?usp=drive_link).

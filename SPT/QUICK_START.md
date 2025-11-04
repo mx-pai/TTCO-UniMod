@@ -11,22 +11,36 @@ cd /root/autodl-tmp/UniMod1K/SPT
 export PYTHONPATH=$(pwd):$PYTHONPATH
 ```
 
-确认 `experiments/spt/unimod1k.yaml`（或 `unimod1k_improved.yaml`）里以下路径指向服务器实际位置：
+配置路径建议按如下步骤执行：
 
-```yaml
-MODEL:
-  PRETRAINED: '/root/autodl-tmp/STARKS_ep0500.pth.tar'
-  LANGUAGE:
-    PATH: '/root/autodl-tmp/bert/bert-base-uncased.tar.gz'
-    VOCAB_PATH: '/root/autodl-tmp/bert/bert-base-uncased-vocab.txt'
+1. 在 `lib/train/admin/local.py` 中填写训练阶段路径，例如：
+   ```python
+   self.workspace_dir = '/root/autodl-tmp/spt_runs'
+   self.unimod1k_dir = '/root/autodl-tmp/data/1-训练验证集/TrainSet'
+   self.unimod1k_dir_nlp = '/root/autodl-tmp/data/1-训练验证集/TrainSet'
+   ```
+2. 在 `experiments/spt/unimod1k.yaml`（或 `unimod1k_improved.yaml`）中指定模型与数据位置：
+   ```yaml
+   MODEL:
+     PRETRAINED: '/root/autodl-tmp/STARKS_ep0500.pth.tar'
+     LANGUAGE:
+       PATH: '/root/autodl-tmp/bert/bert-base-uncased.tar.gz'
+       VOCAB_PATH: '/root/autodl-tmp/bert/bert-base-uncased-vocab.txt'
 
-PATHS:
-  DATA_ROOT: '/root/autodl-tmp/data/1-训练验证集/TrainSet'
-  NLP_ROOT:  '/root/autodl-tmp/data/1-训练验证集/TrainSet'
-  OUTPUT_DIR: '/root/autodl-tmp/spt_runs'
-```
+   PATHS:
+     DATA_ROOT: '/root/autodl-tmp/data/1-训练验证集/TrainSet'
+     NLP_ROOT:  '/root/autodl-tmp/data/1-训练验证集/TrainSet'
+     OUTPUT_DIR: '/root/autodl-tmp/spt_runs'
+   ```
+   > 可通过 `TRAIN.AUG` 段开启/调整额外的数据增广（如颜色抖动、模糊、随机擦除等）。
+3. 在测试阶段的 `lib/test/evaluation/local.py` 中设置：
+   ```python
+   settings.unimod1k_path = '/root/autodl-tmp/data/fusai'
+   settings.network_path  = '/root/autodl-tmp/TTCO-UniMod/SPT/test/networks'
+   settings.results_path  = '/root/autodl-tmp/TTCO-UniMod/SPT/test/tracking_results'
+   ```
 
-> 可通过 `TRAIN.AUG` 段开启/调整额外的数据增广（如颜色抖动、模糊、随机擦除等）。
+测试数据需包含 `list.txt` 与每个序列的 `color/`, `depth/`, `groundtruth.txt`, `nlp.txt`，文件名需使用 8 位数字。
 
 ---
 
@@ -77,7 +91,13 @@ watch -n 1 nvidia-smi
 
 ## 4️⃣ 评测模型
 
-1. 在配置文件中设置 `TEST.EPOCH` 为想要测试的 checkpoint 编号。  
+1. 在 `tracking/parameters/spt/unimod1k.yaml` 中指定要加载的 checkpoint，例如：
+   ```yaml
+   TEST:
+     EPOCH: 240
+   lang_threshold: 0.0
+   ```
+   （旧模型没有语言门控时建议将 `lang_threshold` 设为 0.0，避免输出被过滤。）
 2. 执行：
    ```bash
    python3 tracking/test.py \
@@ -88,7 +108,7 @@ watch -n 1 nvidia-smi
      --threads 0 \
      --num_gpus 1
    ```
-3. 结果位于 `lib/test/tracking_results/spt/<tracker_param>_001/`。
+3. 结果写入 `settings.results_path/spt/<tracker_param>_<runid>/rgbd-unsupervised/`。默认路径为 `/root/autodl-tmp/TTCO-UniMod/SPT/test/tracking_results`。
 
 ---
 

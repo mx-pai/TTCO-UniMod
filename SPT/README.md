@@ -23,20 +23,24 @@ export PYTHONPATH=$(pwd):$PYTHONPATH
 
 ---
 
-## 2. 数据与预训练模型
+## 2. 路径配置与数据准备
 
-请确保以下文件存在（可根据实际目录调整）：
+### 2.1 训练阶段配置
 
+在 `lib/train/admin/local.py` 中填写训练所需路径（可按需修改）：
+
+```python
+class EnvironmentSettings(EnvSettings):
+    def __init__(self):
+        super().__init__()
+        self.workspace_dir = '/root/autodl-tmp/spt_runs'          # 训练输出根目录
+        self.tensorboard_dir = f"{self.workspace_dir}/tensorboard"
+        self.pretrained_models = '/root/autodl-tmp'               # 存放 STARK/BERT 权重
+        self.unimod1k_dir = '/root/autodl-tmp/data/1-训练验证集/TrainSet'
+        self.unimod1k_dir_nlp = '/root/autodl-tmp/data/1-训练验证集/TrainSet'
 ```
-/root/autodl-tmp
-├── data/1-训练验证集/TrainSet/…         # RGB/Depth + NLP (nlp.txt) 组织方式同原数据
-├── STARKS_ep0500.pth.tar                 # STARK-S 预训练权重
-└── bert/
-    ├── bert-base-uncased.tar.gz
-    └── bert-base-uncased-vocab.txt
-```
 
-更新 `experiments/spt/unimod1k.yaml`（或 `unimod1k_improved.yaml`）中的路径：
+同时在 `experiments/spt/unimod1k.yaml`（或 `unimod1k_improved.yaml`）中指定模型与数据位置：
 
 ```yaml
 MODEL:
@@ -54,6 +58,33 @@ PATHS:
 `OUTPUT_DIR` 会自动生成 `/<config>/<run_name>/` 子目录，保存 checkpoints、日志、tensorboard、metadata、配置快照等。
 
 若需更强的数据增广，可在 `TRAIN.AUG` 中分别开启 `COLOR_JITTER`、`GAUSSIAN_BLUR` 与 `RANDOM_ERASE` 并调整参数。
+
+### 2.2 测试阶段配置
+
+在 `lib/test/evaluation/local.py` 中填写测试路径（默认示例如下）：
+
+```python
+def local_env_settings():
+    settings = EnvSettings()
+    settings.prj_dir = '/root/autodl-tmp/TTCO-UniMod/SPT'
+    settings.save_dir = '/root/autodl-tmp/TTCO-UniMod/SPT'
+    settings.unimod1k_path = '/root/autodl-tmp/data/fusai'
+    settings.results_path = '/root/autodl-tmp/TTCO-UniMod/SPT/test/tracking_results'
+    settings.network_path = '/root/autodl-tmp/TTCO-UniMod/SPT/test/networks'
+    return settings
+```
+
+测试数据目录结构需包含 `list.txt` 以及按序号命名的帧：
+
+```
+/root/autodl-tmp/data/fusai/
+├── list.txt                 # 例如列出 001, 002, …
+└── 001/
+    ├── color/00000001.jpg …
+    ├── depth/00000001.png …
+    ├── groundtruth.txt      # 第一行 [x, y, w, h]
+    └── nlp.txt
+```
 
 ---
 
@@ -97,7 +128,15 @@ watch -n 1 nvidia-smi
 
 评测模型：
 1. 在配置文件里设置 `TEST.EPOCH` 为要评测的 checkpoint 编号。
-2. 运行：
+2. 准备测试参数：在 `tracking/parameters/spt/unimod1k.yaml` 中指定要加载的 epoch（旧模型默认 240），必要时将 `lang_threshold` 设为 0.0 避免语义门控直接清零预测。
+
+   ```yaml
+   TEST:
+     EPOCH: 240
+   lang_threshold: 0.0
+   ```
+
+3. 运行：
    ```bash
    python3 tracking/test.py \
      --tracker_name spt \
@@ -107,7 +146,9 @@ watch -n 1 nvidia-smi
      --threads 0 \
      --num_gpus 1
    ```
-3. 结果保存在 `lib/test/tracking_results/spt/<tracker_param>_001/`。
+4. 结果保存在 `settings.results_path/spt/<tracker_param>_<runid>/rgbd-unsupervised/`。默认示例路径为 `/root/autodl-tmp/TTCO-UniMod/SPT/test/tracking_results`。
+
+> 旧版本 checkpoint 不包含 `lang_gate` 参数，加载时会提示 Missing keys…，属正常现象；语言门控会使用当前代码的默认初始化。若要充分利用语言约束，可重新训练模型。
 
 ---
 
