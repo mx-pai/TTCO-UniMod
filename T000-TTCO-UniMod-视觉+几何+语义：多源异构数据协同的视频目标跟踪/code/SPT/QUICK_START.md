@@ -7,37 +7,38 @@
 ## 1️⃣ 准备环境与路径
 
 ```bash
-cd /root/autodl-tmp/UniMod1K/SPT
+cd <SUBMISSION_ROOT>/code/SPT
 export PYTHONPATH=$(pwd):$PYTHONPATH
 ```
 
-配置路径建议按如下步骤执行：
+配置路径建议按如下步骤执行（默认指向打包根目录下的 `models/` 与 `results/`，可根据实际部署位置调整）：
 
-1. 在 `lib/train/admin/local.py` 中填写训练阶段路径，例如：
+1. 在 `lib/train/admin/local.py` 中确认训练阶段路径，例如：
    ```python
-   self.workspace_dir = '/root/autodl-tmp/spt_runs'
-   self.unimod1k_dir = '/root/autodl-tmp/data/1-训练验证集/TrainSet'
-   self.unimod1k_dir_nlp = '/root/autodl-tmp/data/1-训练验证集/TrainSet'
+   self.workspace_dir = '<SUBMISSION_ROOT>/results/experiments'
+   self.pretrained_models = '<SUBMISSION_ROOT>/models/pretrained'
+   self.unimod1k_dir = '/data/UniMod1K/TrainSet'
+   self.unimod1k_dir_nlp = '/data/UniMod1K/TrainSet'
    ```
 2. 在 `experiments/spt/unimod1k.yaml`（或 `unimod1k_improved.yaml`）中指定模型与数据位置：
    ```yaml
    MODEL:
-     PRETRAINED: '/root/autodl-tmp/STARKS_ep0500.pth.tar'
+     PRETRAINED: '<SUBMISSION_ROOT>/models/pretrained/STARKS_ep0500.pth.tar'
      LANGUAGE:
-       PATH: '/root/autodl-tmp/bert/bert-base-uncased.tar.gz'
-       VOCAB_PATH: '/root/autodl-tmp/bert/bert-base-uncased-vocab.txt'
+       PATH: '<SUBMISSION_ROOT>/models/pretrained/bert-base-uncased.tar.gz'
+       VOCAB_PATH: '<SUBMISSION_ROOT>/models/pretrained/bert-base-uncased-vocab.txt'
 
    PATHS:
-     DATA_ROOT: '/root/autodl-tmp/data/1-训练验证集/TrainSet'
-     NLP_ROOT:  '/root/autodl-tmp/data/1-训练验证集/TrainSet'
-     OUTPUT_DIR: '/root/autodl-tmp/spt_runs'
+     DATA_ROOT: '/data/UniMod1K/TrainSet'
+     NLP_ROOT:  '/data/UniMod1K/TrainSet'
+     OUTPUT_DIR: '<SUBMISSION_ROOT>/results/experiments'
    ```
    > 可通过 `TRAIN.AUG` 段开启/调整额外的数据增广（如颜色抖动、模糊、随机擦除等）。
 3. 在测试阶段的 `lib/test/evaluation/local.py` 中设置：
    ```python
-   settings.unimod1k_path = '/root/autodl-tmp/data/fusai'
-   settings.network_path  = '/root/autodl-tmp/TTCO-UniMod/SPT/test/networks'
-   settings.results_path  = '/root/autodl-tmp/TTCO-UniMod/SPT/test/tracking_results'
+   settings.unimod1k_path = '/data/UniMod1K/TestSet'
+   settings.network_path  = '<SUBMISSION_ROOT>/models/checkpoints'
+   settings.results_path  = '<SUBMISSION_ROOT>/results/evaluations/tracking_results'
    ```
 
 测试数据需包含 `list.txt` 与每个序列的 `color/`, `depth/`, `groundtruth.txt`, `nlp.txt`，文件名需使用 8 位数字。
@@ -65,7 +66,7 @@ python3 train_improved.py \
 - `--output_root`：可覆盖 `PATHS.OUTPUT_DIR`，按需将输出写到其他磁盘。
 
 运行后会自动生成目录：  
-`/root/autodl-tmp/spt_runs/<config>/<run_name>/`  
+`<SUBMISSION_ROOT>/results/experiments/<config>/<run_name>/`  
 其中包含 `checkpoints/`, `logs/`, `tensorboard/`, `metadata/` 等子目录，并记录配置快照与 git 信息。
 
 ---
@@ -74,14 +75,14 @@ python3 train_improved.py \
 
 ```bash
 # 查看最新日志
-tail -f /root/autodl-tmp/spt_runs/<config>/<run_name>/logs/*.log
+tail -f <SUBMISSION_ROOT>/results/experiments/<config>/<run_name>/logs/*.log
 
 # 查看 Loss / IoU
-grep "Loss/total" /root/autodl-tmp/spt_runs/<config>/<run_name>/logs/*.log | tail
-grep "IoU"        /root/autodl-tmp/spt_runs/<config>/<run_name>/logs/*.log | tail
+grep "Loss/total" <SUBMISSION_ROOT>/results/experiments/<config>/<run_name>/logs/*.log | tail
+grep "IoU"        <SUBMISSION_ROOT>/results/experiments/<config>/<run_name>/logs/*.log | tail
 
 # TensorBoard（如需）
-tensorboard --logdir /root/autodl-tmp/spt_runs/<config>/<run_name>/tensorboard --port 6006
+tensorboard --logdir <SUBMISSION_ROOT>/results/experiments/<config>/<run_name>/tensorboard --port 6006
 
 # GPU 监控
 watch -n 1 nvidia-smi
@@ -108,7 +109,7 @@ watch -n 1 nvidia-smi
      --threads 0 \
      --num_gpus 1
    ```
-3. 结果写入 `settings.results_path/spt/<tracker_param>_<runid>/rgbd-unsupervised/`。默认路径为 `/root/autodl-tmp/TTCO-UniMod/SPT/test/tracking_results`。
+3. 结果写入 `settings.results_path/spt/<tracker_param>_<runid>/rgbd-unsupervised/`。默认路径为 `<SUBMISSION_ROOT>/results/evaluations/tracking_results`。
 
 ---
 
@@ -118,7 +119,7 @@ watch -n 1 nvidia-smi
 
 ```bash
 python3 auto_clean.py \
-  --root /root/autodl-tmp/spt_runs \
+  --root <SUBMISSION_ROOT>/results/experiments \
   --keep 3 \
   --force
 ```

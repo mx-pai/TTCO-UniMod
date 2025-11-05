@@ -13,11 +13,13 @@
 ## 1. 环境与依赖
 
 ```bash
-cd /root/autodl-tmp/UniMod1K/SPT
+cd <SUBMISSION_ROOT>/code/SPT
 conda env create -f environment.yml
 conda activate spt
 export PYTHONPATH=$(pwd):$PYTHONPATH
 ```
+
+> 文中出现的 `<SUBMISSION_ROOT>` 代表当前提交根目录，请替换为实际路径。
 
 > `jpeg4py` 需要系统安装 `libturbojpeg`。Ubuntu 上执行 `sudo apt-get install libturbojpeg`。
 
@@ -33,26 +35,26 @@ export PYTHONPATH=$(pwd):$PYTHONPATH
 class EnvironmentSettings(EnvSettings):
     def __init__(self):
         super().__init__()
-        self.workspace_dir = '/root/autodl-tmp/spt_runs'          # 训练输出根目录
+        self.workspace_dir = '<SUBMISSION_ROOT>/results/experiments'          # 训练输出根目录
         self.tensorboard_dir = f"{self.workspace_dir}/tensorboard"
-        self.pretrained_models = '/root/autodl-tmp'               # 存放 STARK/BERT 权重
-        self.unimod1k_dir = '/root/autodl-tmp/data/1-训练验证集/TrainSet'
-        self.unimod1k_dir_nlp = '/root/autodl-tmp/data/1-训练验证集/TrainSet'
+        self.pretrained_models = '<SUBMISSION_ROOT>/models/pretrained'        # 存放 STARK/BERT 权重
+        self.unimod1k_dir = '/data/UniMod1K/TrainSet'
+        self.unimod1k_dir_nlp = '/data/UniMod1K/TrainSet'
 ```
 
 同时在 `experiments/spt/unimod1k.yaml`（或 `unimod1k_improved.yaml`）中指定模型与数据位置：
 
 ```yaml
 MODEL:
-  PRETRAINED: '/root/autodl-tmp/STARKS_ep0500.pth.tar'
+  PRETRAINED: '<SUBMISSION_ROOT>/models/pretrained/STARKS_ep0500.pth.tar'
   LANGUAGE:
-    PATH: '/root/autodl-tmp/bert/bert-base-uncased.tar.gz'
-    VOCAB_PATH: '/root/autodl-tmp/bert/bert-base-uncased-vocab.txt'
+    PATH: '<SUBMISSION_ROOT>/models/pretrained/bert-base-uncased.tar.gz'
+    VOCAB_PATH: '<SUBMISSION_ROOT>/models/pretrained/bert-base-uncased-vocab.txt'
 
 PATHS:
-  DATA_ROOT: '/root/autodl-tmp/data/1-训练验证集/TrainSet'
-  NLP_ROOT:  '/root/autodl-tmp/data/1-训练验证集/TrainSet'
-  OUTPUT_DIR: '/root/autodl-tmp/spt_runs'
+  DATA_ROOT: '/data/UniMod1K/TrainSet'
+  NLP_ROOT:  '/data/UniMod1K/TrainSet'
+  OUTPUT_DIR: '<SUBMISSION_ROOT>/results/experiments'
 ```
 
 `OUTPUT_DIR` 会自动生成 `/<config>/<run_name>/` 子目录，保存 checkpoints、日志、tensorboard、metadata、配置快照等。
@@ -66,18 +68,18 @@ PATHS:
 ```python
 def local_env_settings():
     settings = EnvSettings()
-    settings.prj_dir = '/root/autodl-tmp/TTCO-UniMod/SPT'
-    settings.save_dir = '/root/autodl-tmp/TTCO-UniMod/SPT'
-    settings.unimod1k_path = '/root/autodl-tmp/data/fusai'
-    settings.results_path = '/root/autodl-tmp/TTCO-UniMod/SPT/test/tracking_results'
-    settings.network_path = '/root/autodl-tmp/TTCO-UniMod/SPT/test/networks'
+    settings.prj_dir = '<SUBMISSION_ROOT>/code/SPT'
+    settings.save_dir = '<SUBMISSION_ROOT>/results'
+    settings.unimod1k_path = '/data/UniMod1K/TestSet'
+    settings.results_path = '<SUBMISSION_ROOT>/results/evaluations/tracking_results'
+    settings.network_path = '<SUBMISSION_ROOT>/models/checkpoints'
     return settings
 ```
 
 测试数据目录结构需包含 `list.txt` 以及按序号命名的帧：
 
 ```
-/root/autodl-tmp/data/fusai/
+/data/UniMod1K/TestSet/
 ├── list.txt                 # 例如列出 001, 002, …
 └── 001/
     ├── color/00000001.jpg …
@@ -117,10 +119,10 @@ python3 train_improved.py \
 
 ```bash
 # 日志
-tail -f /root/autodl-tmp/spt_runs/<config>/<run_name>/logs/*.log
+tail -f <SUBMISSION_ROOT>/results/experiments/<config>/<run_name>/logs/*.log
 
 # tensorboard（如配置）
-tensorboard --logdir /root/autodl-tmp/spt_runs/<config>/<run_name>/tensorboard --port 6006
+tensorboard --logdir <SUBMISSION_ROOT>/results/experiments/<config>/<run_name>/tensorboard --port 6006
 
 # GPU 监控
 watch -n 1 nvidia-smi
@@ -146,7 +148,7 @@ watch -n 1 nvidia-smi
      --threads 0 \
      --num_gpus 1
    ```
-4. 结果保存在 `settings.results_path/spt/<tracker_param>_<runid>/rgbd-unsupervised/`。默认示例路径为 `/root/autodl-tmp/TTCO-UniMod/SPT/test/tracking_results`。
+4. 结果保存在 `settings.results_path/spt/<tracker_param>_<runid>/rgbd-unsupervised/`。默认示例路径为 `<SUBMISSION_ROOT>/results/evaluations/tracking_results`。
 
 > 旧版本 checkpoint 不包含 `lang_gate` 参数，加载时会提示 Missing keys…，属正常现象；语言门控会使用当前代码的默认初始化。若要充分利用语言约束，可重新训练模型。
 
@@ -158,7 +160,7 @@ watch -n 1 nvidia-smi
 
 ```bash
 python3 auto_clean.py \
-  --root /root/autodl-tmp/spt_runs \
+  --root <SUBMISSION_ROOT>/results/experiments \
   --keep 3 \
   --force
 ```

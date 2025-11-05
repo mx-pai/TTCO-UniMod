@@ -5,6 +5,10 @@ import shutil
 import sys
 from datetime import datetime
 from typing import List, Tuple
+from pathlib import Path
+
+
+DEFAULT_RUN_ROOT = Path(__file__).resolve().parents[2] / "results" / "experiments"
 
 
 def list_run_dirs(config_dir: str) -> List[Tuple[str, float]]:
@@ -77,7 +81,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--root",
-        default="/root/autodl-tmp/spt_runs",
+        default=str(DEFAULT_RUN_ROOT),
         help="Root directory containing training runs (default: %(default)s)",
     )
     parser.add_argument(
