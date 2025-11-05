@@ -56,4 +56,4 @@ UniMod1K/
 The subset for monocular depth estimation can be downloaded from [Baidu Cloud](https://pan.baidu.com/s/1ClHpwC1_BAN0GZSKT2jxaQ?pwd=l8um) or [Google Drive](https://drive.google.com/file/d/1aAokzgUssm26G_DHqKtF-FBzSErvpSrz/view?usp=drive_link).
 
 ## Contact
-If you have any question, please feel free to contact **Ma Xu** at [b23041708@njupt.edu.cn](mailto:b23041708@njupt.edu.cn)
+If you have any question, please feel free to contact **Xu Ma** at [b23041708@njupt.edu.cn](mailto:b23041708@njupt.edu.cn)
