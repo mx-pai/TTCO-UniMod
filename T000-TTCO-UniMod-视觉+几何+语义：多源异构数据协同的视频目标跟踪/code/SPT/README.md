@@ -173,7 +173,6 @@ python3 auto_clean.py \
 
 - 详细的分步操作请参见 [`QUICK_START.md`](./QUICK_START.md)。
 - 若需要调整数据读取或训练策略，可参考源码中 `lib/train/base_functions.py`、`lib/train/data/sampler_longseq.py`、`lib/train/actors/spt.py`。
-- 评测/集成 VOT Toolkit 的旧文档已移除；如需使用，可自行参考 VOT 官方指南。
 
 ---
 

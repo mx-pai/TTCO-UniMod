@@ -8,13 +8,10 @@
 <PROJECT_ROOT>/
 ├─ README.md                     # 当前说明文档
 ├─ code/                         # 完整训练与测试源代码（SPT 工程位于 code/SPT）
-├─ models/                       # 训练生成的 checkpoint 及预训练模型
-├─ results/                      # 训练/测试输出、指标与可视化
-└─ docs/                         # 额外说明、实验记录或报告
+└─ models/                       # 训练生成的 checkpoint 及预训练模型
 ```
 
 - 将模型权重、BERT 词表、预训练骨干等放在 `models/`，并在配置文件中同步更新路径。
-- 训练日志、评测结果、可视化图表等建议归档到 `results/`，保持结构清晰易查。
 
 ## 2. 环境依赖与安装
 
@@ -89,15 +86,10 @@ python train_improved.py \
      --threads 0 \
      --num_gpus 1
    ```
-3. 结果写入 `settings.results_path/spt/<tracker_param>_<runid>/rgbd-unsupervised/`。建议将关键指标（如 `performance.json`）、日志及可视化整理回 `results/`，并在其中的 README 标注测试配置。
+3. 结果写入 `settings.results_path/spt/<tracker_param>_<runid>/rgbd-unsupervised/`
 
 ## 6. 日志监控与清理
 
 - `tail -f <log_file>` 或 `tensorboard --logdir <tensorboard_dir>` 可实时查看训练状态。
 - 使用 `python auto_clean.py --root <PROJECT_ROOT>/results/experiments --keep 3` 可定期清理旧实验，仅保留最新若干次运行。
 
-## 7. 资料整理建议
-
-- `models/`：记录当前使用的模型文件、来源及用途。
-- `results/`：保存最新指标、可视化和实验结论，确保命名有序。
-- `docs/`：可放置实验记录、会议纪要或报告，保持与模型/结果信息同步。

@@ -11,7 +11,7 @@ models/
   │    ├─ STARKS_ep0500.pth.tar       # 空间骨干
   │    ├─ bert-base-uncased.tar.gz    # 语言编码器
   │    └─ bert-base-uncased-vocab.txt # 与语言模型配套的词表
-  └─ README.md                        # 文件说明（本文件，可根据实际情况补充）
+  └─ README.md                        # 文件说明（本文件）
 ```
 
 在运行训练/测试前，请同步更新下列路径以指向本目录中的实际文件：
