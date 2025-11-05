@@ -11,11 +11,11 @@ cd <PROJECT_ROOT>/code/SPT
 export PYTHONPATH=$(pwd):$PYTHONPATH
 ```
 
-配置路径建议按如下步骤执行（默认指向项目根目录下的 `models/` 与 `results/`，可根据实际部署位置调整）：
+配置路径建议按如下步骤执行，可根据实际部署位置调整：
 
 1. 在 `lib/train/admin/local.py` 中确认训练阶段路径，例如：
    ```python
-   self.workspace_dir = '<PROJECT_ROOT>/results/experiments'
+   self.workspace_dir = '<WORKSPACE_DIR>'
    self.pretrained_models = '<PROJECT_ROOT>/models/pretrained'
    self.unimod1k_dir = '/data/UniMod1K/TrainSet'
    self.unimod1k_dir_nlp = '/data/UniMod1K/TrainSet'
@@ -31,15 +31,16 @@ export PYTHONPATH=$(pwd):$PYTHONPATH
    PATHS:
      DATA_ROOT: '/data/UniMod1K/TrainSet'
      NLP_ROOT:  '/data/UniMod1K/TrainSet'
-     OUTPUT_DIR: '<PROJECT_ROOT>/results/experiments'
+     OUTPUT_DIR: '<WORKSPACE_DIR>'
    ```
    > 可通过 `TRAIN.AUG` 段开启/调整额外的数据增广（如颜色抖动、模糊、随机擦除等）。
 3. 在测试阶段的 `lib/test/evaluation/local.py` 中设置：
    ```python
    settings.unimod1k_path = '/data/UniMod1K/TestSet'
    settings.network_path  = '<PROJECT_ROOT>/models/checkpoints'
-   settings.results_path  = '<PROJECT_ROOT>/results/evaluations/tracking_results'
+   settings.results_path  = '<RESULTS_OUTPUT_DIR>'
    ```
+   > `'<WORKSPACE_DIR>'` 与 `'<RESULTS_OUTPUT_DIR>'` 均为自定义输出目录，请提前创建并赋予写权限。
 
 测试数据需包含 `list.txt` 与每个序列的 `color/`, `depth/`, `groundtruth.txt`, `nlp.txt`，文件名需使用 8 位数字。
 
@@ -66,7 +67,7 @@ python3 train_improved.py \
 - `--output_root`：可覆盖 `PATHS.OUTPUT_DIR`，按需将输出写到其他磁盘。
 
 运行后会自动生成目录：  
-`<PROJECT_ROOT>/results/experiments/<config>/<run_name>/`  
+`<WORKSPACE_DIR>/<config>/<run_name>/`  
 其中包含 `checkpoints/`, `logs/`, `tensorboard/`, `metadata/` 等子目录，并记录配置快照与 git 信息。
 
 ---
@@ -75,14 +76,14 @@ python3 train_improved.py \
 
 ```bash
 # 查看最新日志
-tail -f <PROJECT_ROOT>/results/experiments/<config>/<run_name>/logs/*.log
+tail -f <WORKSPACE_DIR>/<config>/<run_name>/logs/*.log
 
 # 查看 Loss / IoU
-grep "Loss/total" <PROJECT_ROOT>/results/experiments/<config>/<run_name>/logs/*.log | tail
-grep "IoU"        <PROJECT_ROOT>/results/experiments/<config>/<run_name>/logs/*.log | tail
+grep "Loss/total" <WORKSPACE_DIR>/<config>/<run_name>/logs/*.log | tail
+grep "IoU"        <WORKSPACE_DIR>/<config>/<run_name>/logs/*.log | tail
 
 # TensorBoard（如需）
-tensorboard --logdir <PROJECT_ROOT>/results/experiments/<config>/<run_name>/tensorboard --port 6006
+tensorboard --logdir <WORKSPACE_DIR>/<config>/<run_name>/tensorboard --port 6006
 
 # GPU 监控
 watch -n 1 nvidia-smi
@@ -109,7 +110,7 @@ watch -n 1 nvidia-smi
      --threads 0 \
      --num_gpus 1
    ```
-3. 结果写入 `settings.results_path/spt/<tracker_param>_<runid>/rgbd-unsupervised/`。默认路径为 `<PROJECT_ROOT>/results/evaluations/tracking_results`。
+3. 结果会写入 `settings.results_path` 自动创建的子目录，具体结构可参考 `lib/test/evaluation/local.py`。
 
 ---
 
@@ -119,7 +120,7 @@ watch -n 1 nvidia-smi
 
 ```bash
 python3 auto_clean.py \
-  --root <PROJECT_ROOT>/results/experiments \
+  --root <WORKSPACE_DIR> \
   --keep 3 \
   --force
 ```

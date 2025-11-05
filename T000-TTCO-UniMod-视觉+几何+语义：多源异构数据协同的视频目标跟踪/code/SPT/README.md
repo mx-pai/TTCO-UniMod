@@ -35,7 +35,7 @@ export PYTHONPATH=$(pwd):$PYTHONPATH
 class EnvironmentSettings(EnvSettings):
     def __init__(self):
         super().__init__()
-        self.workspace_dir = '<PROJECT_ROOT>/results/experiments'          # 训练输出根目录
+        self.workspace_dir = '<WORKSPACE_DIR>'          # 训练输出根目录
         self.tensorboard_dir = f"{self.workspace_dir}/tensorboard"
         self.pretrained_models = '<PROJECT_ROOT>/models/pretrained'        # 存放 STARK/BERT 权重
         self.unimod1k_dir = '/data/UniMod1K/TrainSet'
@@ -54,7 +54,7 @@ MODEL:
 PATHS:
   DATA_ROOT: '/data/UniMod1K/TrainSet'
   NLP_ROOT:  '/data/UniMod1K/TrainSet'
-  OUTPUT_DIR: '<PROJECT_ROOT>/results/experiments'
+  OUTPUT_DIR: '<WORKSPACE_DIR>'
 ```
 
 `OUTPUT_DIR` 会自动生成 `/<config>/<run_name>/` 子目录，保存 checkpoints、日志、tensorboard、metadata、配置快照等。
@@ -69,12 +69,14 @@ PATHS:
 def local_env_settings():
     settings = EnvSettings()
     settings.prj_dir = '<PROJECT_ROOT>/code/SPT'
-    settings.save_dir = '<PROJECT_ROOT>/results'
+    settings.save_dir = '<RESULTS_OUTPUT_DIR>'
     settings.unimod1k_path = '/data/UniMod1K/TestSet'
-    settings.results_path = '<PROJECT_ROOT>/results/evaluations/tracking_results'
+    settings.results_path = '<RESULTS_OUTPUT_DIR>/tracking_results'
     settings.network_path = '<PROJECT_ROOT>/models/checkpoints'
     return settings
 ```
+
+> `'<WORKSPACE_DIR>'`、`'<RESULTS_OUTPUT_DIR>'` 为用户自定义的训练与测试输出目录（例如 `/data/experiments/ttco` 和 `/data/experiments/ttco/eval`），请提前创建并保证可写。
 
 测试数据目录结构需包含 `list.txt` 以及按序号命名的帧：
 
@@ -119,10 +121,10 @@ python3 train_improved.py \
 
 ```bash
 # 日志
-tail -f <PROJECT_ROOT>/results/experiments/<config>/<run_name>/logs/*.log
+tail -f <WORKSPACE_DIR>/<config>/<run_name>/logs/*.log
 
 # tensorboard（如配置）
-tensorboard --logdir <PROJECT_ROOT>/results/experiments/<config>/<run_name>/tensorboard --port 6006
+tensorboard --logdir <WORKSPACE_DIR>/<config>/<run_name>/tensorboard --port 6006
 
 # GPU 监控
 watch -n 1 nvidia-smi
@@ -148,7 +150,7 @@ watch -n 1 nvidia-smi
      --threads 0 \
      --num_gpus 1
    ```
-4. 结果保存在 `settings.results_path/spt/<tracker_param>_<runid>/rgbd-unsupervised/`。默认示例路径为 `<PROJECT_ROOT>/results/evaluations/tracking_results`。
+4. 结果会自动写入 `settings.results_path` 下的子目录（详见 `lib/test/evaluation/local.py`），无需手动移动文件。
 
 > 旧版本 checkpoint 不包含 `lang_gate` 参数，加载时会提示 Missing keys…，属正常现象；语言门控会使用当前代码的默认初始化。若要充分利用语言约束，可重新训练模型。
 
@@ -160,7 +162,7 @@ watch -n 1 nvidia-smi
 
 ```bash
 python3 auto_clean.py \
-  --root <PROJECT_ROOT>/results/experiments \
+  --root <WORKSPACE_DIR> \
   --keep 3 \
   --force
 ```

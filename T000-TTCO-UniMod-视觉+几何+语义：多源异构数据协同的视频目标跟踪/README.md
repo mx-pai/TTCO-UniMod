@@ -29,7 +29,7 @@ export PYTHONPATH=$(pwd):$PYTHONPATH
 1. **数据准备**：将 UniMod1K 训练/验证集解压至自定义目录（示例 `/data/UniMod1K/TrainSet`），测试集目录需包含 `list.txt` 与编号子目录。
 2. **训练路径**：修改 `code/SPT/lib/train/admin/local.py`：
    ```python
-   self.workspace_dir = '<PROJECT_ROOT>/results/experiments'
+   self.workspace_dir = '<WORKSPACE_DIR>'
    self.pretrained_models = '<PROJECT_ROOT>/models/pretrained'
    self.unimod1k_dir = '/data/UniMod1K/TrainSet'
    self.unimod1k_dir_nlp = '/data/UniMod1K/TrainSet'
@@ -44,14 +44,15 @@ export PYTHONPATH=$(pwd):$PYTHONPATH
    PATHS:
      DATA_ROOT: '/data/UniMod1K/TrainSet'
      NLP_ROOT:  '/data/UniMod1K/TrainSet'
-     OUTPUT_DIR: '<PROJECT_ROOT>/results/experiments'
+     OUTPUT_DIR: '<WORKSPACE_DIR>'
    ```
 4. **测试路径**：在 `code/SPT/lib/test/evaluation/local.py` 中设置：
    ```python
    settings.unimod1k_path = '/data/UniMod1K/TestSet'
-   settings.results_path = '<PROJECT_ROOT>/results/evaluations/tracking_results'
+   settings.results_path = '<RESULTS_OUTPUT_DIR>'
    settings.network_path = '<PROJECT_ROOT>/models/checkpoints'
    ```
+   > 其中 `<WORKSPACE_DIR>`、`<RESULTS_OUTPUT_DIR>` 请替换为实际的实验输出与测试结果根目录，例如 `/data/experiments/ttco`、`/data/experiments/ttco/eval`。
 
 ## 4. 训练流程
 
@@ -70,7 +71,7 @@ python train_improved.py \
   --auto_eval --eval_epochs 10
 ```
 
-训练输出（checkpoints、日志、TensorBoard 等）默认写入 `<PROJECT_ROOT>/results/experiments/<config>/<run_name>/`。训练完成后可将核心 checkpoint 拷贝到 `models/checkpoints/`，方便后续复用。
+训练输出（checkpoints、日志、TensorBoard 等）默认写入 `PATHS.OUTPUT_DIR/<config>/<run_name>/`，请根据自身环境准备可写的 `<WORKSPACE_DIR>` 并在配置里指定。
 
 ## 5. 测试与结果整理
 
@@ -86,10 +87,9 @@ python train_improved.py \
      --threads 0 \
      --num_gpus 1
    ```
-3. 结果写入 `settings.results_path/spt/<tracker_param>_<runid>/rgbd-unsupervised/`
+3. 结果将按照 `lib/test/evaluation/local.py` 中的 `settings.results_path` 自动整理到对应子目录，无需额外移动文件。
 
 ## 6. 日志监控与清理
 
 - `tail -f <log_file>` 或 `tensorboard --logdir <tensorboard_dir>` 可实时查看训练状态。
-- 使用 `python auto_clean.py --root <PROJECT_ROOT>/results/experiments --keep 3` 可定期清理旧实验，仅保留最新若干次运行。
-
+- 使用 `python auto_clean.py --root <WORKSPACE_DIR> --keep 3` 可定期清理旧实验，仅保留最新若干次运行。
