@@ -6,8 +6,9 @@ from lib.config.spt.config import cfg, update_config_from_file
 
 def parameters(yaml_name: str):
     params = TrackerParams()
-    prj_dir = env_settings().prj_dir
-    save_dir = env_settings().save_dir
+    env = env_settings()
+    prj_dir = env.prj_dir
+    save_dir = env.save_dir
     # update default config from yaml file
     yaml_file = os.path.join(prj_dir, 'experiments/spt/%s.yaml' % yaml_name)
     update_config_from_file(yaml_file)
@@ -22,8 +23,8 @@ def parameters(yaml_name: str):
     params.lang_threshold = getattr(cfg.TEST, 'LANG_THRESHOLD', 0.3)
 
     # Network checkpoint path
-    params.checkpoint = os.path.join(save_dir, "/root/autodl-tmp/TTCO-UniMod/model/SPT_ep%04d.pth.tar" %
-                                     cfg.TEST.EPOCH)
+    checkpoint_dir = getattr(env, 'network_path', save_dir)
+    params.checkpoint = os.path.join(checkpoint_dir, f"SPT_ep{cfg.TEST.EPOCH:04d}.pth.tar")
 
     # whether to save boxes from all queries
     params.save_all_boxes = False
